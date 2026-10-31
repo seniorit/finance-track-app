@@ -9,6 +9,7 @@ import { BankSyncService } from '../../../services/bank-sync.service';
 import { BudgetService } from '../../../services/budget.service';
 import { ThemeService } from '../../../services/theme.service';
 import { BcvService } from '../../../services/bcv.service';
+import { BnplService } from '../../../services/bnpl.service';
 import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
 
 @Component({
@@ -59,6 +60,14 @@ import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
             icon="account_balance"
             [badge]="bankSyncService.connectedCount()"
             badgeClass="bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-mono font-bold"
+            (click)="closeSidebar.emit()"
+          />
+          <app-nav-link-item
+            route="/dashboard/deudas"
+            label="Compras Financiadas"
+            icon="credit_score"
+            [badge]="bnplService.allPendingInstallments().length > 0 ? bnplService.allPendingInstallments().length : null"
+            badgeClass="bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 font-mono font-bold"
             (click)="closeSidebar.emit()"
           />
           <app-nav-link-item
@@ -188,6 +197,7 @@ export class Sidebar {
   readonly budgetService = inject(BudgetService);
   readonly themeService = inject(ThemeService);
   readonly bcvService = inject(BcvService);
+  readonly bnplService = inject(BnplService);
 
   readonly closeSidebar = output<void>();
   readonly openProfileModal = output<void>();

@@ -127,6 +127,36 @@
         "icon": { "type": "string", "maxLength": 50, "description": "Material icon identifier" }
       },
       "required": ["id", "userId", "title", "body", "timestamp", "read"]
+    },
+    "FinancedPurchase": {
+      "title": "FinancedPurchase",
+      "description": "BNPL financed purchase with biweekly installments (Cashea, Krece, Popclik)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Purchase unique identifier" },
+        "userId": { "type": "string", "description": "Owning user UID" },
+        "providerId": { "type": "string", "enum": ["cashea", "krece", "popclik", "custom"], "description": "BNPL provider" },
+        "providerName": { "type": "string", "maxLength": 100, "description": "Provider display name" },
+        "storeName": { "type": "string", "maxLength": 120, "description": "Store or merchant name" },
+        "itemDescription": { "type": "string", "maxLength": 200, "description": "Product or item description" },
+        "purchaseDate": { "type": "string", "maxLength": 50, "description": "Purchase date" },
+        "currency": { "type": "string", "maxLength": 10, "description": "Currency code" },
+        "totalAmountUsd": { "type": "number", "description": "Total purchase price in USD" },
+        "downPaymentPercent": { "type": "number", "description": "Initial payment percentage" },
+        "downPaymentUsd": { "type": "number", "description": "Down payment amount in USD" },
+        "financedAmountUsd": { "type": "number", "description": "Financed remainder in USD" },
+        "installmentsCount": { "type": "number", "description": "Number of installments" },
+        "frequencyDays": { "type": "number", "description": "Days between installments" },
+        "firstDueDate": { "type": "string", "maxLength": 50, "description": "First installment due date" },
+        "status": { "type": "string", "enum": ["active", "completed", "cancelled"], "description": "Status" },
+        "installments": {
+          "type": "array",
+          "description": "List of biweekly installments"
+        },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "providerId", "storeName", "itemDescription", "totalAmountUsd", "installmentsCount"]
     }
   },
   "firestore": {
@@ -153,6 +183,10 @@
     "/users/{userId}/bankAccounts/{accountId}": {
       "schema": { "$ref": "#/entities/BankAccount" },
       "description": "User linked open banking accounts"
+    },
+    "/users/{userId}/financedPurchases/{purchaseId}": {
+      "schema": { "$ref": "#/entities/FinancedPurchase" },
+      "description": "User BNPL financed purchases and installment schedule"
     },
     "/users/{userId}/notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/AppNotification" },
