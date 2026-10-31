@@ -9,6 +9,7 @@
 /tmp
 /out-tsc
 /bazel-out
+./skills-lock.json
 
 # Node
 node_modules/
