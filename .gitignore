@@ -9,7 +9,8 @@
 /tmp
 /out-tsc
 /bazel-out
-./skills-lock.json
+skills-lock.json
+firebase-debug.log
 
 # Node
 node_modules/
