@@ -1,0 +1,162 @@
+{
+  "entities": {
+    "Institution": {
+      "title": "Institution",
+      "description": "Financial or banking institution catalog item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique institution code identifier" },
+        "code": { "type": "string", "maxLength": 50, "description": "Short bank code" },
+        "name": { "type": "string", "maxLength": 100, "description": "Full official institution name" },
+        "color": { "type": "string", "maxLength": 20, "description": "Brand hex color" },
+        "icon": { "type": "string", "maxLength": 50, "description": "Material icon identifier" },
+        "type": { "type": "string", "maxLength": 30, "description": "Account type classification" }
+      },
+      "required": ["id", "code", "name", "color", "icon", "type"]
+    },
+    "CategoryDefinition": {
+      "title": "CategoryDefinition",
+      "description": "Global transaction classification category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique category identifier" },
+        "name": { "type": "string", "maxLength": 80, "description": "Category title" },
+        "icon": { "type": "string", "maxLength": 50, "description": "Material icon identifier" },
+        "color": { "type": "string", "maxLength": 20, "description": "Visual accent color" },
+        "type": { "type": "string", "enum": ["income", "expense"], "description": "Category flow direction" }
+      },
+      "required": ["id", "name", "icon", "color", "type"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information, budget target, and preferences",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user ID matching auth.uid" },
+        "name": { "type": "string", "maxLength": 100, "description": "Display name of the user" },
+        "email": { "type": "string", "maxLength": 150, "description": "User email address" },
+        "avatar": { "type": "string", "maxLength": 500000, "description": "Avatar URL or base64 data" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "Role of the user" },
+        "totalMonthlyBudget": { "type": "number", "description": "Total monthly expense budget target" },
+        "preferences": {
+          "type": "object",
+          "description": "User UI and alert preferences"
+        },
+        "createdAt": { "type": "string", "description": "Creation timestamp ISO string" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp ISO string" }
+      },
+      "required": ["id", "name", "email", "totalMonthlyBudget"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Personal income or expense financial movement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Transaction identifier" },
+        "userId": { "type": "string", "description": "Owning user UID" },
+        "type": { "type": "string", "enum": ["income", "expense"], "description": "Transaction type" },
+        "amount": { "type": "number", "description": "Numerical amount of movement" },
+        "currency": { "type": "string", "maxLength": 10, "description": "Transaction currency code" },
+        "exchangeRate": { "type": "number", "description": "Exchange rate applied" },
+        "amountUsd": { "type": "number", "description": "Equivalent USD amount" },
+        "categoryId": { "type": "string", "maxLength": 50, "description": "Category identifier" },
+        "categoryName": { "type": "string", "maxLength": 80, "description": "Category title" },
+        "categoryColor": { "type": "string", "maxLength": 20, "description": "Category hex or color class" },
+        "categoryIcon": { "type": "string", "maxLength": 50, "description": "Material icon identifier" },
+        "accountId": { "type": "string", "maxLength": 50, "description": "Bank account reference" },
+        "accountName": { "type": "string", "maxLength": 100, "description": "Bank account name" },
+        "date": { "type": "string", "maxLength": 50, "description": "ISO date string of movement" },
+        "description": { "type": "string", "maxLength": 200, "description": "Short description of concept" },
+        "notes": { "type": "string", "maxLength": 500, "description": "Optional notes or details" },
+        "status": { "type": "string", "enum": ["cleared", "pending"], "description": "Status of transaction" },
+        "isRecurring": { "type": "boolean", "description": "Recurring transaction flag" },
+        "createdAt": { "type": "string", "description": "Record creation ISO timestamp" }
+      },
+      "required": ["id", "userId", "type", "amount", "categoryId", "date", "description"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Category monthly spending limit and threshold",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Budget identifier" },
+        "userId": { "type": "string", "description": "Owning user UID" },
+        "categoryId": { "type": "string", "maxLength": 50, "description": "Target category ID" },
+        "categoryName": { "type": "string", "maxLength": 80, "description": "Category title" },
+        "categoryColor": { "type": "string", "maxLength": 20, "description": "Category color hex" },
+        "categoryIcon": { "type": "string", "maxLength": 50, "description": "Category icon" },
+        "monthlyLimit": { "type": "number", "description": "Maximum spending threshold per month" },
+        "period": { "type": "string", "description": "Budget recurrence period" },
+        "updatedAt": { "type": "string", "description": "Last updated ISO date" }
+      },
+      "required": ["id", "userId", "categoryId", "monthlyLimit"]
+    },
+    "BankAccount": {
+      "title": "BankAccount",
+      "description": "Connected bank account or financial entity",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Bank account identifier" },
+        "userId": { "type": "string", "description": "Owning user UID" },
+        "name": { "type": "string", "maxLength": 100, "description": "Account friendly name" },
+        "bankName": { "type": "string", "maxLength": 100, "description": "Institution name" },
+        "bankCode": { "type": "string", "maxLength": 50, "description": "Institution code" },
+        "accountNumber": { "type": "string", "maxLength": 30, "description": "Masked IBAN or account number" },
+        "type": { "type": "string", "enum": ["checking", "savings", "credit", "wallet", "investment"], "description": "Account type" },
+        "balance": { "type": "number", "description": "Current balance" },
+        "currency": { "type": "string", "maxLength": 10, "description": "Account currency ISO code" },
+        "lastSyncAt": { "type": "string", "description": "Last sync ISO timestamp" },
+        "status": { "type": "string", "maxLength": 20, "description": "Connection status" },
+        "color": { "type": "string", "maxLength": 20, "description": "Visual accent color" },
+        "isDefault": { "type": "boolean", "description": "Default account flag" }
+      },
+      "required": ["id", "userId", "name", "bankName", "accountNumber", "balance"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "User in-app and push notification record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Notification identifier" },
+        "userId": { "type": "string", "description": "Owning user UID" },
+        "title": { "type": "string", "maxLength": 120, "description": "Headline" },
+        "body": { "type": "string", "maxLength": 300, "description": "Notification content" },
+        "type": { "type": "string", "maxLength": 30, "description": "Notification classification" },
+        "timestamp": { "type": "number", "description": "Unix millisecond timestamp" },
+        "read": { "type": "boolean", "description": "Read flag" },
+        "icon": { "type": "string", "maxLength": 50, "description": "Material icon identifier" }
+      },
+      "required": ["id", "userId", "title", "body", "timestamp", "read"]
+    }
+  },
+  "firestore": {
+    "/institutions/{institutionId}": {
+      "schema": { "$ref": "#/entities/Institution" },
+      "description": "Global catalog of supported banking institutions"
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/CategoryDefinition" },
+      "description": "Global catalog of financial categories"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Individual user profile, limits, and preferences"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "User personal transactions partitioned strictly by user"
+    },
+    "/users/{userId}/budgets/{budgetId}": {
+      "schema": { "$ref": "#/entities/Budget" },
+      "description": "User category budgets and alert thresholds"
+    },
+    "/users/{userId}/bankAccounts/{accountId}": {
+      "schema": { "$ref": "#/entities/BankAccount" },
+      "description": "User linked open banking accounts"
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/AppNotification" },
+      "description": "User notifications list"
+    }
+  }
+}

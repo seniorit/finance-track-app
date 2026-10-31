@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Global catalog of supported banking institutions
+    match /institutions/{institutionId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(institutionId)
+        && incoming().id is string && incoming().id.size() > 0 && incoming().id.size() <= 64
+        && incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 100
+        && incoming().code is string && incoming().code.size() > 0 && incoming().code.size() <= 50;
+      allow delete: if false;
+    }
+
+    // Global catalog of financial categories
+    match /categories/{categoryId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(categoryId)
+        && incoming().id is string && incoming().id.size() > 0 && incoming().id.size() <= 64
+        && incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 80
+        && incoming().type in ['income', 'expense'];
+      allow delete: if false;
+    }
+
+    // User profile document
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false; // Block user directory scraping
+      allow create: if isOwner(userId) && isValidId(userId)
+        && incoming().id == userId
+        && incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 100
+        && incoming().email is string && incoming().email.size() > 0 && incoming().email.size() <= 150
+        && incoming().totalMonthlyBudget is number;
+      allow update: if isOwner(userId) && isValidId(userId)
+        && incoming().id == userId
+        && incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 100
+        && incoming().email is string && incoming().email.size() > 0 && incoming().email.size() <= 150
+        && incoming().totalMonthlyBudget is number;
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // User's personal financial transactions
+      match /transactions/{transactionId} {
+        allow get: if isOwner(userId) && isValidId(transactionId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(transactionId)
+          && incoming().id == transactionId
+          && incoming().userId == userId
+          && incoming().type in ['income', 'expense']
+          && incoming().amount is number
+          && incoming().description is string && incoming().description.size() <= 200;
+        allow update: if isOwner(userId) && isValidId(transactionId)
+          && incoming().id == transactionId
+          && incoming().userId == userId
+          && incoming().type in ['income', 'expense']
+          && incoming().amount is number
+          && incoming().description is string && incoming().description.size() <= 200;
+        allow delete: if isOwner(userId) && isValidId(transactionId);
+      }
+
+      // User's category budgets
+      match /budgets/{budgetId} {
+        allow get: if isOwner(userId) && isValidId(budgetId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(budgetId)
+          && incoming().id == budgetId
+          && incoming().userId == userId
+          && incoming().monthlyLimit is number;
+        allow update: if isOwner(userId) && isValidId(budgetId)
+          && incoming().id == budgetId
+          && incoming().userId == userId
+          && incoming().monthlyLimit is number;
+        allow delete: if isOwner(userId) && isValidId(budgetId);
+      }
+
+      // User's linked bank accounts
+      match /bankAccounts/{accountId} {
+        allow get: if isOwner(userId) && isValidId(accountId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(accountId)
+          && incoming().id == accountId
+          && incoming().userId == userId
+          && incoming().balance is number;
+        allow update: if isOwner(userId) && isValidId(accountId)
+          && incoming().id == accountId
+          && incoming().userId == userId
+          && incoming().balance is number;
+        allow delete: if isOwner(userId) && isValidId(accountId);
+      }
+
+      // User's notification items
+      match /notifications/{notificationId} {
+        allow get: if isOwner(userId) && isValidId(notificationId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(notificationId)
+          && incoming().id == notificationId
+          && incoming().userId == userId
+          && incoming().title is string && incoming().title.size() <= 120
+          && incoming().body is string && incoming().body.size() <= 300
+          && (incoming().timestamp is number || incoming().timestamp is string)
+          && incoming().read is bool;
+        allow update: if isOwner(userId) && isValidId(notificationId)
+          && incoming().id == notificationId
+          && incoming().userId == userId
+          && incoming().read is bool;
+        allow delete: if isOwner(userId) && isValidId(notificationId);
+      }
+    }
+  }
+}
