@@ -1,0 +1,96 @@
+[debug] [2026-10-29T22:35:18.819Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.135Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.136Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.137Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.137Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.137Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.138Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.138Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.138Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.139Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.139Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.139Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.139Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.139Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.140Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.140Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.140Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.140Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:19.142Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/ [none]
+[debug] [2026-10-29T22:35:19.143Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/ x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:19.167Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/storage.googleapis.com [none]
+[debug] [2026-10-29T22:35:19.167Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/storage.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:19.169Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-10-29T22:35:19.170Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:19.171Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/identitytoolkit.googleapis.com [none]
+[debug] [2026-10-29T22:35:19.171Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/identitytoolkit.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:19.173Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/fcm.googleapis.com [none]
+[debug] [2026-10-29T22:35:19.173Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/fcm.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:19.175Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseremoteconfig.googleapis.com [none]
+[debug] [2026-10-29T22:35:19.175Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseremoteconfig.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:19.176Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2026-10-29T22:35:19.177Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:19.178Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-10-29T22:35:19.179Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:19.181Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseio.com [none]
+[debug] [2026-10-29T22:35:19.181Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseio.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:20.181Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/identitytoolkit.googleapis.com 200
+[debug] [2026-10-29T22:35:20.183Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/identitytoolkit.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:20.202Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-10-29T22:35:20.203Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:20.205Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseio.com 403
+[debug] [2026-10-29T22:35:20.205Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseio.com [omitted]
+[debug] [2026-10-29T22:35:20.208Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/fcm.googleapis.com 200
+[debug] [2026-10-29T22:35:20.208Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/fcm.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:20.214Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/storage.googleapis.com 200
+[debug] [2026-10-29T22:35:20.214Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/storage.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:20.218Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasecrashlytics.googleapis.com 200
+[debug] [2026-10-29T22:35:20.219Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:20.303Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.304Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.306Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.306Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.306Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.306Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.307Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.307Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.307Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.308Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.308Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.308Z] Checked if tokens are valid: true, expires at: 1793315748385
+[debug] [2026-10-29T22:35:20.309Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/ [none]
+[debug] [2026-10-29T22:35:20.309Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/ x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:20.311Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-10-29T22:35:20.311Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:20.312Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseremoteconfig.googleapis.com [none]
+[debug] [2026-10-29T22:35:20.312Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseremoteconfig.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:20.313Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2026-10-29T22:35:20.314Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:20.314Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-10-29T22:35:20.315Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:20.316Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseio.com [none]
+[debug] [2026-10-29T22:35:20.317Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseio.com x-goog-quota-user=projects/fintrack-smb
+[debug] [2026-10-29T22:35:20.327Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseremoteconfig.googleapis.com 200
+[debug] [2026-10-29T22:35:20.327Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseremoteconfig.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:20.543Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-10-29T22:35:20.543Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:20.557Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/ 200
+[debug] [2026-10-29T22:35:20.558Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/ [omitted]
+[debug] [2026-10-29T22:35:20.619Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-10-29T22:35:20.619Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:20.671Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseremoteconfig.googleapis.com 200
+[debug] [2026-10-29T22:35:20.672Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseremoteconfig.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:20.714Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasecrashlytics.googleapis.com 200
+[debug] [2026-10-29T22:35:20.715Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:20.724Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseio.com 403
+[debug] [2026-10-29T22:35:20.725Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebaseio.com [omitted]
+[debug] [2026-10-29T22:35:21.040Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-10-29T22:35:21.040Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-10-29T22:35:21.397Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/ 200
+[debug] [2026-10-29T22:35:21.400Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fintrack-smb/services/ [omitted]
+[debug] [2026-10-29T22:35:21.416Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-29T22:35:21.417Z] > authorizing via signed-in user (candystarlike@gmail.com)
+[debug] [2026-10-29T22:35:21.946Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-29T22:35:21.947Z] > authorizing via signed-in user (candystarlike@gmail.com)
+[debug] [2026-10-29T22:35:22.281Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-29T22:35:22.282Z] > authorizing via signed-in user (candystarlike@gmail.com)

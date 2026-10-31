@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix Fintrack Pro - Gestión Inteligente de Gastos",
+  "description": "Plataforma de gestión financiera personal con sincronización bancaria, gráficos estadísticos, alertas de presupuesto automáticas, reportes PDF/CSV y notificaciones push en tiempo real.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
