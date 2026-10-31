@@ -2,6 +2,7 @@ export type NotificationType = 'budget_alert' | 'bank_sync' | 'transaction' | 's
 
 export interface PushNotificationItem {
   id: string;
+  userId?: string;
   title: string;
   body: string;
   timestamp: string;

@@ -60,7 +60,7 @@ interface SvgArc {
               {{ active.category.name }}
             </span>
             <span class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white font-mono">
-              {{ active.amount | currencyFormat: 'EUR' }}
+              {{ active.amount | currencyFormat: 'VES' }}
             </span>
             <span class="text-xs font-semibold px-2 py-0.5 rounded-full mt-0.5" [style.color]="active.color" [style.backgroundColor]="active.color + '22'">
               {{ active.percentage.toFixed(1) }}%
@@ -70,7 +70,7 @@ interface SvgArc {
               Total Gastos
             </span>
             <span class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white font-mono">
-              {{ totalExpense() | currencyFormat: 'EUR' }}
+              {{ totalExpense() | currencyFormat: 'VES' }}
             </span>
             <span class="text-[11px] text-slate-500 dark:text-slate-400">
               {{ items().length }} categorías
@@ -110,7 +110,7 @@ interface SvgArc {
 
             <div class="text-right shrink-0 pl-2">
               <p class="text-xs font-bold text-slate-900 dark:text-white font-mono">
-                {{ item.amount | currencyFormat: 'EUR' }}
+                {{ item.amount | currencyFormat: 'VES' }}
               </p>
               <p class="text-[10px] font-medium text-slate-400">
                 {{ item.percentage.toFixed(1) }}%

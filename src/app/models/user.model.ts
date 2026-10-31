@@ -3,7 +3,7 @@ export interface UserPreferences {
   pushNotificationsEnabled: boolean;
   budgetAlertsEnabled: boolean;
   bankSyncFrequency: 'instant' | 'daily' | 'manual';
-  currency: string; // e.g. "EUR" or "USD"
+  currency: string; // e.g. "VES" or "USD"
 }
 
 export interface User {
@@ -21,4 +21,8 @@ export interface AuthSession {
   token: string;
   user: User;
   expiresAt: number;
+}
+
+export function isDemoUser(): boolean {
+  return false;
 }

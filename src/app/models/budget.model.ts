@@ -1,5 +1,6 @@
 export interface Budget {
   id: string;
+  userId?: string;
   categoryId: string;
   categoryName: string;
   categoryColor: string;
@@ -13,6 +14,7 @@ export type AlertSeverity = 'info' | 'warning' | 'danger';
 
 export interface BudgetAlert {
   id: string;
+  userId?: string;
   budgetId: string;
   categoryId: string;
   categoryName: string;

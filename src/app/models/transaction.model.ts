@@ -12,7 +12,11 @@ export interface Category {
 
 export interface Transaction {
   id: string;
-  amount: number;
+  userId?: string;
+  amount: number; // Monto en Bolívares (VES)
+  exchangeRate?: number; // Tasa de cambio BCV USD/VES de la fecha de la operación
+  amountUsd?: number; // Monto equivalente en Dólares (USD)
+  currency?: string; // 'VES' o 'USD'
   type: TransactionType;
   categoryId: string;
   categoryName?: string;
@@ -29,6 +33,11 @@ export interface Transaction {
 }
 
 export const DEFAULT_CATEGORIES: Category[] = [
+  { id: 'cat_opening_balance', name: 'Saldo Inicial / Apertura', icon: 'account_balance_wallet', color: '#10b981', type: 'income' },
+  { id: 'cat_salary', name: 'Nómina / Salario', icon: 'payments', color: '#059669', type: 'income' },
+  { id: 'cat_investments', name: 'Inversiones y Dividendos', icon: 'trending_up', color: '#0284c7', type: 'income' },
+  { id: 'cat_freelance', name: 'Trabajos Extra / Freelance', icon: 'laptop_mac', color: '#6366f1', type: 'income' },
+  { id: 'cat_other_income', name: 'Otros Ingresos', icon: 'savings', color: '#84cc16', type: 'income' },
   { id: 'cat_food', name: 'Alimentación', icon: 'restaurant', color: '#f59e0b', type: 'expense' },
   { id: 'cat_housing', name: 'Vivienda y Servicios', icon: 'home', color: '#3b82f6', type: 'expense' },
   { id: 'cat_transport', name: 'Transporte', icon: 'directions_car', color: '#6366f1', type: 'expense' },
@@ -39,8 +48,4 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat_travel', name: 'Viajes', icon: 'flight', color: '#06b6d4', type: 'expense' },
   { id: 'cat_utilities', name: 'Suscripciones y Luz', icon: 'bolt', color: '#eab308', type: 'expense' },
   { id: 'cat_other_expense', name: 'Otros Gastos', icon: 'more_horiz', color: '#64748b', type: 'expense' },
-  { id: 'cat_salary', name: 'Nómina / Salario', icon: 'payments', color: '#10b981', type: 'income' },
-  { id: 'cat_investments', name: 'Inversiones y Dividendos', icon: 'trending_up', color: '#059669', type: 'income' },
-  { id: 'cat_freelance', name: 'Trabajos Extra / Freelance', icon: 'laptop_mac', color: '#0284c7', type: 'income' },
-  { id: 'cat_other_income', name: 'Otros Ingresos', icon: 'savings', color: '#84cc16', type: 'income' },
 ];

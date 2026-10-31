@@ -1,91 +1,30 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Budget, BudgetAlert, AlertSeverity } from '../models/budget.model';
 import { NotificationService } from './notification.service';
+import { AuthService } from './auth.service';
+import { FirebaseService } from '../core/firebase/firebase.service';
 import { SafeStorage } from '../core/utils/storage.util';
-
-const DEFAULT_BUDGETS: Budget[] = [
-  {
-    id: 'b_food',
-    categoryId: 'cat_food',
-    categoryName: 'Alimentación',
-    categoryColor: '#f59e0b',
-    categoryIcon: 'restaurant',
-    monthlyLimit: 550,
-    period: 'monthly',
-    notifyAtPercent: [75, 90, 100],
-  },
-  {
-    id: 'b_housing',
-    categoryId: 'cat_housing',
-    categoryName: 'Vivienda y Servicios',
-    categoryColor: '#3b82f6',
-    categoryIcon: 'home',
-    monthlyLimit: 950,
-    period: 'monthly',
-    notifyAtPercent: [75, 90, 100],
-  },
-  {
-    id: 'b_transport',
-    categoryId: 'cat_transport',
-    categoryName: 'Transporte',
-    categoryColor: '#6366f1',
-    categoryIcon: 'directions_car',
-    monthlyLimit: 220,
-    period: 'monthly',
-    notifyAtPercent: [75, 90, 100],
-  },
-  {
-    id: 'b_entertainment',
-    categoryId: 'cat_entertainment',
-    categoryName: 'Entretenimiento',
-    categoryColor: '#ec4899',
-    categoryIcon: 'sports_esports',
-    monthlyLimit: 180,
-    period: 'monthly',
-    notifyAtPercent: [75, 90, 100],
-  },
-  {
-    id: 'b_shopping',
-    categoryId: 'cat_shopping',
-    categoryName: 'Compras',
-    categoryColor: '#10b981',
-    categoryIcon: 'shopping_bag',
-    monthlyLimit: 250,
-    period: 'monthly',
-    notifyAtPercent: [75, 90, 100],
-  },
-];
 
 @Injectable({
   providedIn: 'root',
 })
 export class BudgetService {
   private readonly notificationService = inject(NotificationService);
-  private readonly STORAGE_BUDGETS_KEY = 'fintrack_budgets';
-  private readonly STORAGE_ALERTS_KEY = 'fintrack_budget_alerts';
+  private readonly authService = inject(AuthService);
+  private readonly firebaseService = inject(FirebaseService);
+  private budgetUnsubscribe: (() => void) | null = null;
 
-  readonly budgets = signal<Budget[]>(
-    SafeStorage.getItem<Budget[]>(this.STORAGE_BUDGETS_KEY, DEFAULT_BUDGETS)
-  );
+  private getBudgetStorageKey(userId?: string): string {
+    return userId ? `fintrack_${userId}_budgets` : 'fintrack_budgets';
+  }
 
-  readonly alerts = signal<BudgetAlert[]>(
-    SafeStorage.getItem<BudgetAlert[]>(this.STORAGE_ALERTS_KEY, [
-      {
-        id: 'al_sample_1',
-        budgetId: 'b_food',
-        categoryId: 'cat_food',
-        categoryName: 'Alimentación',
-        categoryIcon: 'restaurant',
-        spent: 478.50,
-        limit: 550,
-        percentage: 87,
-        thresholdTriggered: 75,
-        createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-        read: false,
-        severity: 'warning',
-      },
-    ])
-  );
+  private getAlertStorageKey(userId?: string): string {
+    return userId ? `fintrack_${userId}_alerts` : 'fintrack_alerts';
+  }
+
+  // Initialized empty; populated strictly according to the active user session from Firestore
+  readonly budgets = signal<Budget[]>([]);
+  readonly alerts = signal<BudgetAlert[]>([]);
 
   readonly totalBudgetLimit = computed(() => {
     return this.budgets().reduce((acc, b) => acc + b.monthlyLimit, 0);
@@ -94,6 +33,43 @@ export class BudgetService {
   readonly unreadAlertsCount = computed(() => {
     return this.alerts().filter((a) => !a.read).length;
   });
+
+  constructor() {
+    effect(() => {
+      const user = this.authService.currentUser();
+      if (this.budgetUnsubscribe) {
+        this.budgetUnsubscribe();
+        this.budgetUnsubscribe = null;
+      }
+
+      if (!user) {
+        this.budgets.set([]);
+        this.alerts.set([]);
+        return;
+      }
+
+      const budgetKey = this.getBudgetStorageKey(user.id);
+      const alertKey = this.getAlertStorageKey(user.id);
+
+      this.budgets.set(SafeStorage.getItem<Budget[]>(budgetKey, []));
+      this.alerts.set(SafeStorage.getItem<BudgetAlert[]>(alertKey, []));
+
+      if (this.firebaseService.isBrowser) {
+        const subPath = `users/${user.id}/budgets`;
+        const unsub = this.firebaseService.subscribeCollection<Budget>(
+          subPath,
+          (firestoreBudgets) => {
+            const list = firestoreBudgets || [];
+            this.budgets.set(list);
+            SafeStorage.setItem(budgetKey, list);
+          }
+        );
+        if (unsub) {
+          this.budgetUnsubscribe = unsub;
+        }
+      }
+    });
+  }
 
   /**
    * Evaluates category spending and automatically dispatches alerts when thresholds are reached
@@ -158,8 +134,8 @@ export class BudgetService {
 
           const body =
             thresholdToTrigger >= 100
-              ? `Has gastado ${spent.toFixed(2)} € superando el límite fijado de ${budget.monthlyLimit.toFixed(2)} €.`
-              : `Has alcanzado ${spent.toFixed(2)} € (${Math.round(percentage)}%) de tu límite de ${budget.monthlyLimit.toFixed(2)} €.`;
+              ? `Has gastado ${spent.toFixed(2)} Bs. superando el límite fijado de ${budget.monthlyLimit.toFixed(2)} Bs.`
+              : `Has alcanzado ${spent.toFixed(2)} Bs. (${Math.round(percentage)}%) de tu límite de ${budget.monthlyLimit.toFixed(2)} Bs.`;
 
           this.notificationService.sendNotification(title, body, 'budget_alert', 'warning');
         }
@@ -167,22 +143,31 @@ export class BudgetService {
     });
 
     if (alertCreated) {
+      const user = this.authService.currentUser();
       this.alerts.set(currentAlerts);
-      SafeStorage.setItem(this.STORAGE_ALERTS_KEY, currentAlerts.slice(0, 30));
+      SafeStorage.setItem(this.getAlertStorageKey(user?.id), currentAlerts.slice(0, 30));
     }
   }
 
   setBudget(categoryId: string, categoryName: string, categoryColor: string, categoryIcon: string, monthlyLimit: number): void {
+    const user = this.authService.currentUser();
+    let savedBudget: Budget | null = null;
+
     this.budgets.update((list) => {
       const idx = list.findIndex((b) => b.categoryId === categoryId);
       let updated: Budget[];
       if (idx >= 0) {
-        updated = list.map((b, i) =>
-          i === idx ? { ...b, monthlyLimit } : b
-        );
+        updated = list.map((b, i) => {
+          if (i === idx) {
+            savedBudget = { ...b, monthlyLimit, userId: user?.id };
+            return savedBudget;
+          }
+          return b;
+        });
       } else {
         const newBudget: Budget = {
           id: `b_${categoryId}_${Date.now()}`,
+          userId: user?.id,
           categoryId,
           categoryName,
           categoryColor,
@@ -191,38 +176,58 @@ export class BudgetService {
           period: 'monthly',
           notifyAtPercent: [75, 90, 100],
         };
+        savedBudget = newBudget;
         updated = [...list, newBudget];
       }
-      SafeStorage.setItem(this.STORAGE_BUDGETS_KEY, updated);
+      SafeStorage.setItem(this.getBudgetStorageKey(user?.id), updated);
       return updated;
     });
 
+    // Write to Firestore under users/{userId}/budgets/{id}
+    if (user && savedBudget && this.firebaseService.isBrowser) {
+      const b = savedBudget as Budget;
+      this.firebaseService.setSubDoc(
+        `users/${user.id}/budgets`,
+        b.id,
+        b as unknown as Record<string, unknown>
+      );
+    }
+
     this.notificationService.sendNotification(
       'Presupuesto Actualizado',
-      `Se ha fijado un límite de ${monthlyLimit.toFixed(2)} € para ${categoryName}.`,
+      `Se ha fijado un límite de ${monthlyLimit.toFixed(2)} Bs. para ${categoryName}.`,
       'system',
       'price_check'
     );
   }
 
   deleteBudget(id: string): void {
+    const user = this.authService.currentUser();
+
     this.budgets.update((list) => {
       const updated = list.filter((b) => b.id !== id);
-      SafeStorage.setItem(this.STORAGE_BUDGETS_KEY, updated);
+      SafeStorage.setItem(this.getBudgetStorageKey(user?.id), updated);
       return updated;
     });
+
+    // Delete from Firestore
+    if (user && this.firebaseService.isBrowser) {
+      this.firebaseService.deleteSubDoc(`users/${user.id}/budgets`, id);
+    }
   }
 
   markAlertAsRead(id: string): void {
+    const user = this.authService.currentUser();
     this.alerts.update((list) => {
       const updated = list.map((a) => (a.id === id ? { ...a, read: true } : a));
-      SafeStorage.setItem(this.STORAGE_ALERTS_KEY, updated);
+      SafeStorage.setItem(this.getAlertStorageKey(user?.id), updated);
       return updated;
     });
   }
 
   clearAllAlerts(): void {
+    const user = this.authService.currentUser();
     this.alerts.set([]);
-    SafeStorage.setItem(this.STORAGE_ALERTS_KEY, []);
+    SafeStorage.setItem(this.getAlertStorageKey(user?.id), []);
   }
 }

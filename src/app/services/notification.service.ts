@@ -1,32 +1,28 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { PushNotificationItem, NotificationType } from '../models/notification.model';
 import { SafeStorage } from '../core/utils/storage.util';
+import { FirebaseService } from '../core/firebase/firebase.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class NotificationService {
-  private readonly STORAGE_KEY = 'fintrack_notifications';
+  private readonly firebaseService = inject(FirebaseService);
+  private getStorageKey(): string {
+    const uid = this.firebaseService.auth?.currentUser?.uid;
+    return uid ? `fintrack_${uid}_notifications` : 'fintrack_notifications';
+  }
 
   readonly notifications = signal<PushNotificationItem[]>(
-    SafeStorage.getItem<PushNotificationItem[]>(this.STORAGE_KEY, [
+    SafeStorage.getItem<PushNotificationItem[]>(this.getStorageKey(), [
       {
         id: 'notif_welcome',
         title: '¡Bienvenido a Fintrack Pro!',
-        body: 'Tu cuenta y sincronización bancaria están activas. Disfruta del control total de tus finanzas.',
+        body: 'Tu cuenta ha sido creada exitosamente. Comienza vinculando tu primera cuenta bancaria o registrando tus movimientos.',
         timestamp: new Date().toISOString(),
         read: false,
         type: 'system',
         icon: 'verified',
-      },
-      {
-        id: 'notif_sample_budget',
-        title: 'Alerta de Presupuesto',
-        body: 'Has alcanzado el 82% del presupuesto en Alimentación este mes.',
-        timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
-        read: false,
-        type: 'budget_alert',
-        icon: 'warning',
       },
     ])
   );
@@ -94,10 +90,22 @@ export class NotificationService {
       icon: iconName,
     };
 
+    const uid = this.firebaseService.auth?.currentUser?.uid;
+    if (uid) {
+      newNotif.userId = uid;
+      if (this.firebaseService.isBrowser) {
+        this.firebaseService.setSubDoc(
+          `users/${uid}/notifications`,
+          newNotif.id,
+          newNotif as unknown as Record<string, unknown>
+        );
+      }
+    }
+
     // Update in-app state
     this.notifications.update((list) => {
       const updated = [newNotif, ...list];
-      SafeStorage.setItem(this.STORAGE_KEY, updated.slice(0, 50));
+      SafeStorage.setItem(this.getStorageKey(), updated.slice(0, 50));
       return updated;
     });
 
@@ -124,32 +132,68 @@ export class NotificationService {
   }
 
   markAsRead(id: string): void {
+    const uid = this.firebaseService.auth?.currentUser?.uid;
+    if (uid && this.firebaseService.isBrowser) {
+      this.firebaseService.updateSubDoc(`users/${uid}/notifications`, id, {
+        id,
+        userId: uid,
+        read: true,
+      });
+    }
+
     this.notifications.update((list) => {
       const updated = list.map((n) => (n.id === id ? { ...n, read: true } : n));
-      SafeStorage.setItem(this.STORAGE_KEY, updated);
+      SafeStorage.setItem(this.getStorageKey(), updated);
       return updated;
     });
   }
 
   markAllAsRead(): void {
+    const uid = this.firebaseService.auth?.currentUser?.uid;
+    const current = this.notifications();
+    if (uid && this.firebaseService.isBrowser) {
+      for (const n of current) {
+        if (!n.read) {
+          this.firebaseService.updateSubDoc(`users/${uid}/notifications`, n.id, {
+            id: n.id,
+            userId: uid,
+            read: true,
+          });
+        }
+      }
+    }
+
     this.notifications.update((list) => {
       const updated = list.map((n) => ({ ...n, read: true }));
-      SafeStorage.setItem(this.STORAGE_KEY, updated);
+      SafeStorage.setItem(this.getStorageKey(), updated);
       return updated;
     });
   }
 
   deleteNotification(id: string): void {
+    const uid = this.firebaseService.auth?.currentUser?.uid;
+    if (uid && this.firebaseService.isBrowser) {
+      this.firebaseService.deleteSubDoc(`users/${uid}/notifications`, id);
+    }
+
     this.notifications.update((list) => {
       const updated = list.filter((n) => n.id !== id);
-      SafeStorage.setItem(this.STORAGE_KEY, updated);
+      SafeStorage.setItem(this.getStorageKey(), updated);
       return updated;
     });
   }
 
   clearAll(): void {
+    const uid = this.firebaseService.auth?.currentUser?.uid;
+    const current = this.notifications();
+    if (uid && this.firebaseService.isBrowser) {
+      for (const n of current) {
+        this.firebaseService.deleteSubDoc(`users/${uid}/notifications`, n.id);
+      }
+    }
+
     this.notifications.set([]);
-    SafeStorage.setItem(this.STORAGE_KEY, []);
+    SafeStorage.setItem(this.getStorageKey(), []);
   }
 
   private playNotificationSound(): void {

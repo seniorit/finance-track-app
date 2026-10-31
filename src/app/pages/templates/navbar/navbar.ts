@@ -1,14 +1,17 @@
 import { Component, inject, output, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FinanceService } from '../../../services/finance.service';
 import { BankSyncService } from '../../../services/bank-sync.service';
 import { NotificationService } from '../../../services/notification.service';
 import { ThemeService } from '../../../services/theme.service';
+import { AuthService } from '../../../services/auth.service';
+import { BcvService } from '../../../services/bcv.service';
 import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
 
 @Component({
   selector: 'app-navbar',
-  imports: [MatIconModule, DateFormatPipe],
+  imports: [MatIconModule, DateFormatPipe, DecimalPipe],
   template: `
     <header class="h-16 px-4 md:px-6 flex items-center justify-between bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 transition-colors">
       <!-- Left side: Hamburger button + Search -->
@@ -46,6 +49,27 @@ import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
 
       <!-- Right side: Quick actions & Push Notifications & Theme -->
       <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Live BCV Rate Badge with refresh -->
+        <button
+          type="button"
+          (click)="bcvService.loadRates(true)"
+          [title]="'Tasa Oficial BCV: ' + bcvService.fechaValor() + ' (' + bcvService.source() + ')'"
+          class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all cursor-pointer group"
+        >
+          <span class="flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span class="font-bold font-mono">
+            BCV: Bs. {{ bcvService.dollarRate() | number:'1.2-2' }}
+          </span>
+          <mat-icon
+            [class.animate-spin]="bcvService.isLoading()"
+            class="text-xs text-emerald-600 dark:text-emerald-400 group-hover:rotate-180 transition-transform"
+          >
+            sync
+          </mat-icon>
+        </button>
         <!-- Push Permission Button (shown if supported and not yet granted) -->
         @if (notificationService.pushSupported() && !notificationService.hasPushPermission()) {
           <button
@@ -210,18 +234,52 @@ import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
         >
           <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
         </button>
+
+        <!-- User Profile Avatar Quick Button -->
+        @if (authService.currentUser(); as user) {
+          <div class="h-6 w-px bg-slate-200 dark:border-slate-800 mx-1 hidden sm:block"></div>
+          <button
+            type="button"
+            (click)="openProfileModal.emit()"
+            class="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700/80 border border-slate-200/70 dark:border-slate-700/60 transition-all cursor-pointer group"
+            title="Actualizar detalles de usuario (nombre y foto)"
+            aria-label="Editar perfil de usuario"
+          >
+            <div class="relative">
+              <img
+                [src]="user.avatar"
+                [alt]="user.name"
+                referrerpolicy="no-referrer"
+                class="w-7 h-7 rounded-full object-cover border border-emerald-500/60 group-hover:scale-105 transition-transform"
+              />
+              <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+            </div>
+            <div class="hidden xl:flex flex-col text-left">
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-100 max-w-[100px] truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                {{ user.name.split(' ')[0] }}
+              </span>
+              <span class="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">
+                Perfil
+              </span>
+            </div>
+            <mat-icon class="text-xs text-slate-400 group-hover:text-emerald-500 transition-colors hidden sm:inline">edit</mat-icon>
+          </button>
+        }
       </div>
     </header>
   `,
 })
 export class Navbar {
+  readonly authService = inject(AuthService);
   readonly financeService = inject(FinanceService);
   readonly bankSyncService = inject(BankSyncService);
   readonly notificationService = inject(NotificationService);
   readonly themeService = inject(ThemeService);
+  readonly bcvService = inject(BcvService);
 
   readonly openMobileMenu = output<void>();
   readonly openAddTx = output<void>();
+  readonly openProfileModal = output<void>();
 
   readonly isNotificationsOpen = signal<boolean>(false);
 

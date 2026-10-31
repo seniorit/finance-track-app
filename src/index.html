@@ -19,39 +19,9 @@
     <meta name="theme-color" content="#0f172a" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap"
-      rel="stylesheet"
-    />
-    <script>
-      (function () {
-        try {
-          var raw = localStorage.getItem('fintrack_theme');
-          var stored = raw;
-          try {
-            stored = JSON.parse(raw);
-          } catch (e) {}
-          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (stored === 'dark' || ((!stored || stored === 'system') && prefersDark)) {
-            document.documentElement.classList.add('dark');
-            document.documentElement.setAttribute('data-theme', 'dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-            document.documentElement.setAttribute('data-theme', 'light');
-          }
-        } catch (e) {}
-      })();
-    </script>
-    <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -59,6 +29,5 @@
     class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200"
   >
     <app-root></app-root>
-    <noscript>Please enable JavaScript to continue using this application.</noscript>
   </body>
 </html>

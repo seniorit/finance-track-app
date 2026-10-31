@@ -68,16 +68,23 @@ export class PdfGenerator {
     doc.text('Resumen Ejecutivo del Período', margin, currentY);
     currentY += 5;
 
+    const currencySymbol = options.currency === 'USD' ? '$' : 'Bs.';
+    const formatMoney = (val: number) => {
+      const parts = Math.abs(val).toFixed(2).split('.');
+      parts[0] = (parts[0] ?? '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return `${currencySymbol} ${parts.join(',')}`;
+    };
+
     // Metric Cards Grid (4 boxes)
     const boxWidth = (pageWidth - margin * 2 - 9) / 4;
     const boxHeight = 20;
 
     const metrics = [
-      { label: 'INGRESOS TOTALES', value: `+${options.totalIncome.toFixed(2)} ${options.currency}`, color: [16, 185, 129] },
-      { label: 'GASTOS TOTALES', value: `-${options.totalExpense.toFixed(2)} ${options.currency}`, color: [239, 68, 68] },
+      { label: 'INGRESOS TOTALES', value: `+${formatMoney(options.totalIncome)}`, color: [16, 185, 129] },
+      { label: 'GASTOS TOTALES', value: `-${formatMoney(options.totalExpense)}`, color: [239, 68, 68] },
       {
         label: 'BALANCE NETO',
-        value: `${options.netBalance >= 0 ? '+' : ''}${options.netBalance.toFixed(2)} ${options.currency}`,
+        value: `${options.netBalance >= 0 ? '+' : '-'}${formatMoney(options.netBalance)}`,
         color: options.netBalance >= 0 ? [59, 130, 246] : [239, 68, 68],
       },
       {
@@ -105,7 +112,7 @@ export class PdfGenerator {
       doc.text(m.label, boxX + 3, currentY + 6.5);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
+      doc.setFontSize(8.5);
       doc.setTextColor(m.color[0], m.color[1], m.color[2]);
       doc.text(m.value, boxX + 3, currentY + 15);
     });
@@ -155,7 +162,7 @@ export class PdfGenerator {
       doc.text(cat.name, margin + 3, currentY + 3.8);
       doc.text(`${cat.count} movs`, margin + 70, currentY + 3.8);
       doc.text(`${pct}%`, margin + 110, currentY + 3.8);
-      doc.text(`${cat.amount.toFixed(2)} ${options.currency}`, pageWidth - margin - 3, currentY + 3.8, { align: 'right' });
+      doc.text(formatMoney(cat.amount), pageWidth - margin - 3, currentY + 3.8, { align: 'right' });
 
       doc.setDrawColor(241, 245, 249);
       doc.line(margin, currentY + 5.5, pageWidth - margin, currentY + 5.5);
@@ -168,20 +175,20 @@ export class PdfGenerator {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(15, 23, 42);
-    doc.text('Detalle de Movimientos Recientes', margin, currentY);
+    doc.text('Detalle de Movimientos con Tasa Oficial BCV', margin, currentY);
     currentY += 4;
 
     // Transactions Table Header
     doc.setFillColor(241, 245, 249);
     doc.rect(margin, currentY, pageWidth - margin * 2, 6, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
+    doc.setFontSize(7);
     doc.setTextColor(71, 85, 105);
     doc.text('Fecha', margin + 3, currentY + 4.2);
-    doc.text('Concepto / Descripción', margin + 28, currentY + 4.2);
-    doc.text('Categoría', margin + 90, currentY + 4.2);
-    doc.text('Cuenta', margin + 130, currentY + 4.2);
-    doc.text('Monto', pageWidth - margin - 3, currentY + 4.2, { align: 'right' });
+    doc.text('Concepto / Descripción', margin + 26, currentY + 4.2);
+    doc.text('Categoría', margin + 82, currentY + 4.2);
+    doc.text('Tasa BCV', margin + 120, currentY + 4.2);
+    doc.text('Monto (VES) / Equiv. USD', pageWidth - margin - 3, currentY + 4.2, { align: 'right' });
     currentY += 6.5;
 
     // Draw rows
@@ -197,19 +204,25 @@ export class PdfGenerator {
       doc.setTextColor(51, 65, 85);
       doc.text(tx.date, margin + 3, currentY + 3.8);
 
-      const truncatedDesc = tx.description.length > 36 ? tx.description.slice(0, 34) + '...' : tx.description;
-      doc.text(truncatedDesc, margin + 28, currentY + 3.8);
-      doc.text(tx.categoryName || tx.categoryId, margin + 90, currentY + 3.8);
-      doc.text(tx.accountName || 'Cuenta', margin + 130, currentY + 3.8);
+      const truncatedDesc = tx.description.length > 30 ? tx.description.slice(0, 28) + '...' : tx.description;
+      doc.text(truncatedDesc, margin + 26, currentY + 3.8);
+      doc.text(tx.categoryName || tx.categoryId, margin + 82, currentY + 3.8);
+
+      const rateText = tx.exchangeRate ? `${tx.exchangeRate.toFixed(2)} Bs./$` : 'Oficial';
+      doc.text(rateText, margin + 120, currentY + 3.8);
+
+      const usdVal = tx.amountUsd ?? (tx.exchangeRate ? tx.amount / tx.exchangeRate : 0);
+      const usdStr = usdVal > 0 ? ` ($${usdVal.toFixed(2)})` : '';
+      const sign = tx.type === 'expense' ? '-' : '+';
+      const formattedAmount = `${sign}${formatMoney(tx.amount)}${usdStr}`;
 
       doc.setFont('helvetica', 'bold');
       if (tx.type === 'expense') {
         doc.setTextColor(220, 38, 38);
-        doc.text(`-${tx.amount.toFixed(2)} ${options.currency}`, pageWidth - margin - 3, currentY + 3.8, { align: 'right' });
       } else {
         doc.setTextColor(16, 185, 129);
-        doc.text(`+${tx.amount.toFixed(2)} ${options.currency}`, pageWidth - margin - 3, currentY + 3.8, { align: 'right' });
       }
+      doc.text(formattedAmount, pageWidth - margin - 3, currentY + 3.8, { align: 'right' });
 
       doc.setDrawColor(241, 245, 249);
       doc.line(margin, currentY + 5.2, pageWidth - margin, currentY + 5.2);

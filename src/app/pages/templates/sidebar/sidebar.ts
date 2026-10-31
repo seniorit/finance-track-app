@@ -1,18 +1,21 @@
 import { Component, inject, output } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { BrandLink } from './brand-link/brand-link';
 import { NavLinkItem } from './nav-link-item/nav-link-item';
 import { AuthService } from '../../../services/auth.service';
+import { FinanceService } from '../../../services/finance.service';
 import { BankSyncService } from '../../../services/bank-sync.service';
 import { BudgetService } from '../../../services/budget.service';
 import { ThemeService } from '../../../services/theme.service';
+import { BcvService } from '../../../services/bcv.service';
 import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
 
 @Component({
   selector: 'app-sidebar',
-  imports: [BrandLink, NavLinkItem, MatIconModule, CurrencyFormatPipe],
+  imports: [BrandLink, NavLinkItem, MatIconModule, DecimalPipe, CurrencyFormatPipe],
   template: `
-    <aside class="w-64 h-full flex flex-col justify-between bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 p-4 select-none">
+    <aside class="w-[315px] h-full flex flex-col justify-between bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 p-4 select-none">
       <!-- Top brand & navigation -->
       <div class="space-y-6">
         <div class="flex items-center justify-between">
@@ -38,6 +41,8 @@ import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
             route="/dashboard/transacciones"
             label="Transacciones"
             icon="receipt_long"
+            [badge]="financeService.transactions().length"
+            badgeClass="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono font-bold"
             (click)="closeSidebar.emit()"
           />
           <app-nav-link-item
@@ -45,14 +50,15 @@ import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
             label="Presupuestos"
             icon="donut_large"
             [badge]="budgetService.unreadAlertsCount() > 0 ? budgetService.unreadAlertsCount() : null"
-            badgeClass="bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300"
+            badgeClass="bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 font-mono font-bold"
             (click)="closeSidebar.emit()"
           />
           <app-nav-link-item
             route="/dashboard/bancos"
             label="Cuentas Bancarias"
             icon="account_balance"
-            [badge]="bankSyncService.connectedCount() + ' activas'"
+            [badge]="bankSyncService.connectedCount()"
+            badgeClass="bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-mono font-bold"
             (click)="closeSidebar.emit()"
           />
           <app-nav-link-item
@@ -79,7 +85,10 @@ import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
             <div>
               <p class="text-xs text-slate-500 dark:text-slate-400">Saldo Global</p>
               <p class="text-base font-bold text-slate-900 dark:text-white font-mono">
-                {{ bankSyncService.totalBankBalance() | currencyFormat: 'EUR' }}
+                {{ bankSyncService.totalBankBalance() | currencyFormat: 'VES' }}
+              </p>
+              <p class="text-[10px] font-mono text-slate-400">
+                ≈ $ {{ (bankSyncService.totalBankBalance() / (bcvService.dollarRate() || 52.45)) | number:'1.2-2' }} USD
               </p>
             </div>
             <button
@@ -118,31 +127,54 @@ import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
         <!-- User profile pill -->
         @if (authService.currentUser(); as user) {
           <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/50">
-            <div class="flex items-center gap-2.5 overflow-hidden">
-              <img
-                [src]="user.avatar"
-                [alt]="user.name"
-                referrerpolicy="no-referrer"
-                class="w-9 h-9 rounded-full object-cover border border-emerald-500/40 shrink-0"
-              />
+            <button
+              type="button"
+              (click)="openProfileModal.emit(); closeSidebar.emit()"
+              class="flex items-center gap-2.5 overflow-hidden text-left hover:opacity-85 transition-opacity cursor-pointer flex-1 mr-1.5 group"
+              title="Actualizar detalles del usuario (nombre y foto)"
+              aria-label="Editar perfil de usuario"
+            >
+              <div class="relative shrink-0">
+                <img
+                  [src]="user.avatar"
+                  [alt]="user.name"
+                  referrerpolicy="no-referrer"
+                  class="w-9 h-9 rounded-full object-cover border border-emerald-500/50 group-hover:scale-105 transition-transform"
+                />
+                <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[9px] shadow-xs">
+                  <mat-icon class="text-[10px]">edit</mat-icon>
+                </span>
+              </div>
               <div class="flex flex-col truncate">
-                <span class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                <span class="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                   {{ user.name }}
                 </span>
                 <span class="text-[11px] text-slate-400 truncate">
                   {{ user.email }}
                 </span>
               </div>
-            </div>
-
-            <button
-              (click)="authService.logout()"
-              class="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
-              title="Cerrar sesión"
-              aria-label="Cerrar sesión"
-            >
-              <mat-icon class="text-lg">logout</mat-icon>
             </button>
+
+            <div class="flex items-center gap-0.5 shrink-0">
+              <button
+                type="button"
+                (click)="openProfileModal.emit(); closeSidebar.emit()"
+                class="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors cursor-pointer"
+                title="Editar perfil"
+                aria-label="Editar perfil de usuario"
+              >
+                <mat-icon class="text-lg">manage_accounts</mat-icon>
+              </button>
+              <button
+                type="button"
+                (click)="authService.logout()"
+                class="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                title="Cerrar sesión"
+                aria-label="Cerrar sesión"
+              >
+                <mat-icon class="text-lg">logout</mat-icon>
+              </button>
+            </div>
           </div>
         }
       </div>
@@ -151,9 +183,12 @@ import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
 })
 export class Sidebar {
   readonly authService = inject(AuthService);
+  readonly financeService = inject(FinanceService);
   readonly bankSyncService = inject(BankSyncService);
   readonly budgetService = inject(BudgetService);
   readonly themeService = inject(ThemeService);
+  readonly bcvService = inject(BcvService);
 
   readonly closeSidebar = output<void>();
+  readonly openProfileModal = output<void>();
 }

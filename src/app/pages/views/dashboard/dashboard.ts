@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,6 +10,7 @@ import { BankSyncService } from '../../../services/bank-sync.service';
 import { BudgetService } from '../../../services/budget.service';
 import { AuthService } from '../../../services/auth.service';
 import { NotificationService } from '../../../services/notification.service';
+import { BcvService } from '../../../services/bcv.service';
 import { Transaction } from '../../../models/transaction.model';
 import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
 import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
@@ -22,6 +24,7 @@ import { TransactionModal } from '../feature-components/transaction-modal';
 import { BankSyncModal } from '../feature-components/bank-sync-modal';
 import { BudgetManagerModal } from '../feature-components/budget-manager-modal';
 import { ExportModal } from '../feature-components/export-modal';
+import { UserProfileModal } from '../feature-components/user-profile-modal';
 
 export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'bancos' | 'reportes';
 
@@ -30,6 +33,7 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
   imports: [
     ReactiveFormsModule,
     MatIconModule,
+    DecimalPipe,
     CurrencyFormatPipe,
     DateFormatPipe,
     CashFlowChart,
@@ -38,133 +42,182 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
     BankSyncModal,
     BudgetManagerModal,
     ExportModal,
+    UserProfileModal,
   ],
   template: `
     <div class="space-y-6 max-w-7xl mx-auto pb-16">
-      <!-- Top Welcome Banner & Controls -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <!-- Top Contextual View Header & Actions -->
+      <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Hola, {{ authService.currentUser()?.name?.split(' ')?.[0] || 'Alejandro' }} 👋
-            </h1>
-            <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-300/40 dark:border-emerald-800/40 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              En línea
-            </span>
+          <!-- Breadcrumb navigation -->
+          <div class="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 mb-1.5 font-medium">
+            <span class="hover:text-slate-600 dark:hover:text-slate-300">Finanzas</span>
+            <span>/</span>
+            <span class="text-emerald-700 dark:text-emerald-400 font-semibold">{{ currentTabTitle() }}</span>
           </div>
-          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Plataforma de gestión financiera personal con sincronización bancaria y alertas automáticas.
-          </p>
+
+          @switch (activeTab()) {
+            @case ('overview') {
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  Hola, {{ authService.currentUser()?.name?.split(' ')?.[0] || 'Alejandro' }} 👋
+                </h1>
+                <button
+                  type="button"
+                  (click)="showProfileModal.set(true)"
+                  class="p-1 rounded-lg text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  title="Actualizar detalles de tu perfil (foto y nombre)"
+                  aria-label="Actualizar datos de usuario"
+                >
+                  <mat-icon class="text-base">edit</mat-icon>
+                </button>
+                <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-300/40 dark:border-emerald-800/40 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  En línea
+                </span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Resumen ejecutivo de flujo mensual, tesorería bancaria y límites presupuestarios.
+              </p>
+            }
+            @case ('transacciones') {
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  Historial de Transacciones
+                </h1>
+                <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  {{ financeService.transactions().length }} movimientos
+                </span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Filtra por tipo, categoría o cuenta y concilia tus ingresos y gastos registrados.
+              </p>
+            }
+            @case ('presupuestos') {
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  Presupuestos & Metas
+                </h1>
+                @if (budgetService.unreadAlertsCount() > 0) {
+                  <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 animate-pulse">
+                    {{ budgetService.unreadAlertsCount() }} alertas activas
+                  </span>
+                }
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Establece techos de gasto por categoría y recibe alertas automáticas en tiempo real.
+              </p>
+            }
+            @case ('bancos') {
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  Cuentas Bancarias
+                </h1>
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                  PSD2 Open Banking
+                </span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Sincronización bancaria automatizada con entidades financieras y conciliación de saldos.
+              </p>
+            }
+            @case ('reportes') {
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  Reportes & Exportación
+                </h1>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Genera balances completos auditables en documentos PDF estructurados o planillas CSV.
+              </p>
+            }
+          }
         </div>
 
         <!-- Quick Action Buttons -->
         <div class="flex flex-wrap items-center gap-2">
-          <button
-            (click)="showExportModal.set(true)"
-            class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <mat-icon class="text-sm text-emerald-600 dark:text-emerald-400">download</mat-icon>
-            <span>Exportar</span>
-          </button>
+          @if (activeTab() === 'overview') {
+            <button
+              (click)="showProfileModal.set(true)"
+              class="px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Actualizar foto de perfil, nombre y preferencias"
+            >
+              <mat-icon class="text-sm text-emerald-600 dark:text-emerald-400">manage_accounts</mat-icon>
+              <span>Mi Perfil</span>
+            </button>
 
-          <button
-            (click)="openNewTransaction()"
-            class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-          >
-            <mat-icon class="text-sm">add_circle</mat-icon>
-            <span>Nuevo Movimiento</span>
-          </button>
-        </div>
-      </div>
+            <button
+              (click)="showExportModal.set(true)"
+              class="px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <mat-icon class="text-sm text-emerald-600 dark:text-emerald-400">download</mat-icon>
+              <span>Exportar</span>
+            </button>
 
-      <!-- Navigation Tabs Pill Bar (Syncs with Sidebar) -->
-      <div class="flex items-center gap-1.5 p-1.5 bg-slate-200/70 dark:bg-slate-800/80 rounded-2xl overflow-x-auto select-none border border-slate-300/40 dark:border-slate-700/50">
-        <button
-          (click)="selectTab('overview')"
-          class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
-          [class.bg-white]="activeTab() === 'overview'"
-          [class.dark:bg-slate-900]="activeTab() === 'overview'"
-          [class.text-emerald-700]="activeTab() === 'overview'"
-          [class.dark:text-emerald-400]="activeTab() === 'overview'"
-          [class.shadow-xs]="activeTab() === 'overview'"
-          [class.text-slate-600]="activeTab() !== 'overview'"
-          [class.dark:text-slate-400]="activeTab() !== 'overview'"
-        >
-          <mat-icon class="text-base">dashboard</mat-icon>
-          <span>Panel Principal</span>
-        </button>
-
-        <button
-          (click)="selectTab('transacciones')"
-          class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
-          [class.bg-white]="activeTab() === 'transacciones'"
-          [class.dark:bg-slate-900]="activeTab() === 'transacciones'"
-          [class.text-emerald-700]="activeTab() === 'transacciones'"
-          [class.dark:text-emerald-400]="activeTab() === 'transacciones'"
-          [class.shadow-xs]="activeTab() === 'transacciones'"
-          [class.text-slate-600]="activeTab() !== 'transacciones'"
-          [class.dark:text-slate-400]="activeTab() !== 'transacciones'"
-        >
-          <mat-icon class="text-base">receipt_long</mat-icon>
-          <span>Transacciones</span>
-          <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-            {{ financeService.transactions().length }}
-          </span>
-        </button>
-
-        <button
-          (click)="selectTab('presupuestos')"
-          class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
-          [class.bg-white]="activeTab() === 'presupuestos'"
-          [class.dark:bg-slate-900]="activeTab() === 'presupuestos'"
-          [class.text-emerald-700]="activeTab() === 'presupuestos'"
-          [class.dark:text-emerald-400]="activeTab() === 'presupuestos'"
-          [class.shadow-xs]="activeTab() === 'presupuestos'"
-          [class.text-slate-600]="activeTab() !== 'presupuestos'"
-          [class.dark:text-slate-400]="activeTab() !== 'presupuestos'"
-        >
-          <mat-icon class="text-base">donut_large</mat-icon>
-          <span>Presupuestos</span>
-          @if (budgetService.unreadAlertsCount() > 0) {
-            <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold animate-pulse">
-              {{ budgetService.unreadAlertsCount() }}
-            </span>
+            <button
+              (click)="openNewTransaction()"
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+            >
+              <mat-icon class="text-sm">add_circle</mat-icon>
+              <span>Nuevo Movimiento</span>
+            </button>
+          } @else if (activeTab() === 'transacciones') {
+            <button
+              (click)="directExportCsv()"
+              class="px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <mat-icon class="text-sm text-emerald-600 dark:text-emerald-400">table_chart</mat-icon>
+              <span>Exportar CSV</span>
+            </button>
+            <button
+              (click)="openNewTransaction()"
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+            >
+              <mat-icon class="text-sm">add_circle</mat-icon>
+              <span>Nuevo Movimiento</span>
+            </button>
+          } @else if (activeTab() === 'presupuestos') {
+            <button
+              (click)="showCreateBudgetForm.set(!showCreateBudgetForm())"
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+            >
+              <mat-icon class="text-sm">{{ showCreateBudgetForm() ? 'remove' : 'add' }}</mat-icon>
+              <span>{{ showCreateBudgetForm() ? 'Ocultar Formulario' : 'Nuevo Presupuesto' }}</span>
+            </button>
+          } @else if (activeTab() === 'bancos') {
+            <button
+              (click)="triggerSyncAll()"
+              [disabled]="bankSyncService.isSyncingAll()"
+              class="px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <mat-icon [class.animate-spin]="bankSyncService.isSyncingAll()" class="text-sm text-emerald-600 dark:text-emerald-400">sync</mat-icon>
+              <span>Sincronizar Todas</span>
+            </button>
+            <button
+              (click)="openAddBankModal()"
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+            >
+              <mat-icon class="text-sm">add_circle</mat-icon>
+              <span>+ Nueva Cuenta</span>
+            </button>
+          } @else if (activeTab() === 'reportes') {
+            <button
+              (click)="directExportPdf()"
+              [disabled]="isGeneratingPdf()"
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            >
+              <mat-icon class="text-sm">picture_as_pdf</mat-icon>
+              <span>Descargar PDF</span>
+            </button>
+            <button
+              (click)="directExportCsv()"
+              class="px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <mat-icon class="text-sm text-emerald-600 dark:text-emerald-400">table_chart</mat-icon>
+              <span>Descargar CSV</span>
+            </button>
           }
-        </button>
-
-        <button
-          (click)="selectTab('bancos')"
-          class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
-          [class.bg-white]="activeTab() === 'bancos'"
-          [class.dark:bg-slate-900]="activeTab() === 'bancos'"
-          [class.text-emerald-700]="activeTab() === 'bancos'"
-          [class.dark:text-emerald-400]="activeTab() === 'bancos'"
-          [class.shadow-xs]="activeTab() === 'bancos'"
-          [class.text-slate-600]="activeTab() !== 'bancos'"
-          [class.dark:text-slate-400]="activeTab() !== 'bancos'"
-        >
-          <mat-icon class="text-base">account_balance</mat-icon>
-          <span>Cuentas Bancarias</span>
-          <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold">
-            {{ bankSyncService.connectedCount() }}
-          </span>
-        </button>
-
-        <button
-          (click)="selectTab('reportes')"
-          class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
-          [class.bg-white]="activeTab() === 'reportes'"
-          [class.dark:bg-slate-900]="activeTab() === 'reportes'"
-          [class.text-emerald-700]="activeTab() === 'reportes'"
-          [class.dark:text-emerald-400]="activeTab() === 'reportes'"
-          [class.shadow-xs]="activeTab() === 'reportes'"
-          [class.text-slate-600]="activeTab() !== 'reportes'"
-          [class.dark:text-slate-400]="activeTab() !== 'reportes'"
-        >
-          <mat-icon class="text-base">description</mat-icon>
-          <span>Reportes PDF / CSV</span>
-        </button>
+        </div>
       </div>
 
       <!-- ========================================== -->
@@ -172,6 +225,49 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
       <!-- ========================================== -->
       @if (activeTab() === 'overview') {
         <div class="space-y-6">
+          <!-- Tasa Oficial Dólar BCV Banner / Indicator Card -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 dark:from-emerald-950/40 dark:to-blue-950/40 border border-emerald-200/80 dark:border-emerald-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+            <div class="flex items-center gap-3.5">
+              <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                <mat-icon class="text-2xl">currency_exchange</mat-icon>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Tasa Oficial Dólar BCV
+                  </span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold">
+                    {{ bcvService.fechaValor() || 'Oficial en vivo' }}
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-2 mt-0.5">
+                  <span class="text-xs text-slate-500 dark:text-slate-400">1 USD =</span>
+                  <span class="font-mono font-extrabold text-emerald-700 dark:text-emerald-400 text-base sm:text-lg">
+                    Bs. {{ bcvService.dollarRate() | number:'1.2-2' }}
+                  </span>
+                  <span class="text-slate-400 text-xs mx-1">|</span>
+                  <span class="text-xs text-slate-500 dark:text-slate-400">1 EUR =</span>
+                  <span class="font-mono font-semibold text-slate-700 dark:text-slate-200 text-xs">
+                    Bs. {{ bcvService.euroRate() | number:'1.2-2' }}
+                  </span>
+                  <span class="text-[11px] text-slate-400">({{ bcvService.source() }})</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <button
+                type="button"
+                (click)="bcvService.loadRates(true)"
+                [disabled]="bcvService.isLoading()"
+                class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                <mat-icon [class.animate-spin]="bcvService.isLoading()" class="text-sm text-emerald-600">sync</mat-icon>
+                <span>{{ bcvService.isLoading() ? 'Consultando...' : 'Actualizar BCV' }}</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Critical Budget Warning Alert (if any budget reached >= 80% or exceeded) -->
           @if (highestBudgetAlert(); as alert) {
             <div
@@ -201,7 +297,7 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
                     — {{ alert.budget.categoryName }} ({{ alert.percentage.toFixed(0) }}%)
                   </p>
                   <p class="text-xs text-slate-600 dark:text-slate-300">
-                    Has gastado {{ alert.spent | currencyFormat: 'EUR' }} de tu límite de {{ alert.budget.monthlyLimit | currencyFormat: 'EUR' }}.
+                    Has gastado {{ alert.spent | currencyFormat: 'VES' }} de tu límite de {{ alert.budget.monthlyLimit | currencyFormat: 'VES' }}.
                   </p>
                 </div>
               </div>
@@ -234,12 +330,17 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
               </div>
               <div class="space-y-1">
                 <p class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono">
-                  {{ bankSyncService.totalBankBalance() | currencyFormat: 'EUR' }}
+                  {{ bankSyncService.totalBankBalance() | currencyFormat: 'VES' }}
                 </p>
-                <p class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                  <mat-icon class="text-xs">trending_up</mat-icon>
-                  <span>+{{ financeService.netBalance() | currencyFormat: 'EUR': true }} este mes</span>
-                </p>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400">
+                    ≈ $ {{ bcvService.vesToUsd(bankSyncService.totalBankBalance()) | number:'1.2-2' }} USD
+                  </span>
+                  <p class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                    <mat-icon class="text-xs">trending_up</mat-icon>
+                    <span>+{{ financeService.netBalance() | currencyFormat: 'VES': true }}</span>
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -251,11 +352,11 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
                 </div>
               </div>
               <div class="space-y-1">
-                <p class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono">
-                  +{{ financeService.totalIncome() | currencyFormat: 'EUR' }}
+                <p class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono text-emerald-600 dark:text-emerald-400">
+                  +{{ financeService.totalIncome() | currencyFormat: 'VES' }}
                 </p>
-                <p class="text-xs text-slate-400">
-                  Nómina y transferencias verificadas
+                <p class="text-xs font-mono text-slate-500 dark:text-slate-400">
+                  ≈ $ {{ bcvService.vesToUsd(financeService.totalIncome()) | number:'1.2-2' }} USD @ tasa BCV
                 </p>
               </div>
             </div>
@@ -269,11 +370,16 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
               </div>
               <div class="space-y-1">
                 <p class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono text-rose-600 dark:text-rose-400">
-                  -{{ financeService.totalExpense() | currencyFormat: 'EUR' }}
+                  -{{ financeService.totalExpense() | currencyFormat: 'VES' }}
                 </p>
-                <p class="text-xs text-slate-400">
-                  {{ (financeService.totalExpense() / (budgetService.totalBudgetLimit() || 1) * 100).toFixed(0) }}% del presupuesto global
-                </p>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-mono text-rose-500">
+                    ≈ $ {{ bcvService.vesToUsd(financeService.totalExpense()) | number:'1.2-2' }} USD
+                  </span>
+                  <span class="text-slate-400">
+                    {{ (financeService.totalExpense() / (budgetService.totalBudgetLimit() || 1) * 100).toFixed(0) }}% del límite
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -347,76 +453,178 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
             </div>
           </div>
 
-          <!-- Quick Banks Overview -->
-          <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2.5">
-                <mat-icon class="text-blue-500">account_balance</mat-icon>
-                <h3 class="text-base font-bold text-slate-900 dark:text-white">Cuentas Bancarias</h3>
-              </div>
-              <button
-                (click)="selectTab('bancos')"
-                class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-              >
-                Ver todas y sincronizar →
-              </button>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              @for (acc of bankSyncService.accounts().slice(0, 4); track acc.id) {
-                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
-                  <div class="truncate">
-                    <p class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ acc.name }}</p>
-                    <p class="text-[10px] text-slate-400 font-mono">{{ acc.bankName }} • {{ acc.accountNumber }}</p>
-                  </div>
-                  <p class="text-xs font-bold text-slate-900 dark:text-white font-mono shrink-0 pl-2">
-                    {{ acc.balance | currencyFormat: 'EUR' }}
-                  </p>
-                </div>
-              }
-            </div>
-          </div>
-
-          <!-- Recent Movements Preview -->
-          <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2.5">
-                <mat-icon class="text-emerald-500">receipt_long</mat-icon>
-                <h3 class="text-base font-bold text-slate-900 dark:text-white">Últimos Movimientos</h3>
-              </div>
-              <button
-                (click)="selectTab('transacciones')"
-                class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-              >
-                Ir a todas las transacciones →
-              </button>
-            </div>
-
-            <div class="divide-y divide-slate-100 dark:divide-slate-800">
-              @for (tx of financeService.transactions().slice(0, 5); track tx.id) {
-                <div class="py-3 flex items-center justify-between gap-3">
-                  <div class="flex items-center gap-3 truncate">
-                    <span
-                      class="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 text-xs"
-                      [style.backgroundColor]="tx.categoryColor || '#64748b'"
-                    >
-                      <mat-icon class="text-sm">{{ tx.categoryIcon || 'payments' }}</mat-icon>
-                    </span>
-                    <div class="truncate">
-                      <p class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ tx.description }}</p>
-                      <p class="text-[10px] text-slate-400">{{ tx.categoryName }} • {{ tx.date | dateFormat: 'short' }}</p>
+          <!-- Bottom Balanced 2-Column Grid: Linked Banks & Recent Activity -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Col 1: Cuentas Bancarias Overview -->
+            <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                      <mat-icon class="text-base">account_balance</mat-icon>
+                    </div>
+                    <div>
+                      <h3 class="text-sm font-bold text-slate-900 dark:text-white">Cuentas y Billeteras</h3>
+                      <p class="text-[11px] text-slate-400 font-mono">{{ bankSyncService.connectedCount() }} registradas</p>
                     </div>
                   </div>
-                  <span
-                    class="font-mono font-bold text-xs shrink-0"
-                    [class.text-rose-600]="tx.type === 'expense'"
-                    [class.dark:text-rose-400]="tx.type === 'expense'"
-                    [class.text-emerald-600]="tx.type === 'income'"
-                    [class.dark:text-emerald-400]="tx.type === 'income'"
-                  >
-                    {{ tx.type === 'expense' ? '-' : '+' }}{{ tx.amount | currencyFormat: 'EUR' }}
-                  </span>
+                  <div class="flex items-center gap-2">
+                    <button
+                      (click)="openAddBankModal()"
+                      class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                      title="Registrar nueva cuenta o billetera"
+                    >
+                      <mat-icon class="text-xs">add</mat-icon>
+                      <span>Nueva</span>
+                    </button>
+                    <button
+                      (click)="selectTab('bancos')"
+                      class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                    >
+                      Ver todas →
+                    </button>
+                  </div>
                 </div>
-              }
+
+                <div class="space-y-2.5">
+                  @for (acc of bankSyncService.accounts().slice(0, 4); track acc.id) {
+                    <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
+                      <div class="truncate mr-3">
+                        <div class="flex items-center gap-1.5">
+                          <p class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ acc.name }}</p>
+                          <span
+                            class="text-[9px] font-bold px-1.5 py-0.2 rounded"
+                            [class.bg-emerald-100]="acc.currency === 'USD'"
+                            [class.text-emerald-700]="acc.currency === 'USD'"
+                            [class.dark:bg-emerald-950]="acc.currency === 'USD'"
+                            [class.dark:text-emerald-300]="acc.currency === 'USD'"
+                            [class.bg-blue-100]="acc.currency !== 'USD'"
+                            [class.text-blue-700]="acc.currency !== 'USD'"
+                            [class.dark:bg-blue-950]="acc.currency !== 'USD'"
+                            [class.dark:text-blue-300]="acc.currency !== 'USD'"
+                          >
+                            {{ acc.currency || 'VES' }}
+                          </span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-mono">{{ acc.bankName }} · {{ acc.accountNumber }}</p>
+                      </div>
+                      <div class="text-right shrink-0">
+                        @if (acc.currency === 'USD') {
+                          <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                            $ {{ acc.balance | number:'1.2-2' }}
+                          </p>
+                          <span class="text-[9px] font-mono text-slate-400">
+                            ≈ Bs. {{ bcvService.usdToVes(acc.balance) | number:'1.2-2' }}
+                          </span>
+                        } @else {
+                          <p class="text-xs font-bold text-slate-900 dark:text-white font-mono">
+                            {{ acc.balance | currencyFormat: 'VES' }}
+                          </p>
+                          <span class="text-[9px] font-mono text-slate-400">
+                            ≈ $ {{ bcvService.vesToUsd(acc.balance) | number:'1.2-2' }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="p-4 text-center rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700/70">
+                      <mat-icon class="text-2xl text-emerald-500 mb-1">account_balance_wallet</mat-icon>
+                      <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Sin cuentas vinculadas aún</p>
+                      <p class="text-[11px] text-slate-400 mb-2.5">Agrega tu banco nacional o billetera en USD para conciliar saldos.</p>
+                      <button
+                        (click)="openAddBankModal()"
+                        class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        <mat-icon class="text-xs">add_circle</mat-icon>
+                        <span>+ Registrar Cuenta</span>
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span class="text-xs text-slate-400">Saldo global en entidades</span>
+                <span class="text-sm font-extrabold text-slate-900 dark:text-white font-mono">
+                  {{ bankSyncService.totalBankBalance() | currencyFormat: 'VES' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Col 2: Recent Activity Overview -->
+            <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <mat-icon class="text-base">receipt_long</mat-icon>
+                    </div>
+                    <div>
+                      <h3 class="text-sm font-bold text-slate-900 dark:text-white">Últimos Movimientos</h3>
+                      <p class="text-[11px] text-slate-400 font-mono">{{ financeService.transactions().length }} registrados</p>
+                    </div>
+                  </div>
+                  <button
+                    (click)="selectTab('transacciones')"
+                    class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  >
+                    Ver historial →
+                  </button>
+                </div>
+
+                <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                  @for (tx of financeService.transactions().slice(0, 4); track tx.id) {
+                    <div class="py-2.5 flex items-center justify-between gap-3">
+                      <div class="flex items-center gap-3 truncate">
+                        <span
+                          class="w-7 h-7 rounded-xl flex items-center justify-center text-white shrink-0 text-xs shadow-2xs"
+                          [style.backgroundColor]="tx.categoryColor || '#64748b'"
+                        >
+                          <mat-icon class="text-sm">{{ tx.categoryIcon || 'payments' }}</mat-icon>
+                        </span>
+                        <div class="truncate">
+                          <p class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ tx.description }}</p>
+                          <p class="text-[10px] text-slate-400">{{ tx.categoryName }} · {{ tx.date | dateFormat: 'short' }}</p>
+                        </div>
+                      </div>
+                      <div class="text-right shrink-0">
+                        <span
+                          class="font-mono font-bold text-xs block"
+                          [class.text-rose-600]="tx.type === 'expense'"
+                          [class.dark:text-rose-400]="tx.type === 'expense'"
+                          [class.text-emerald-600]="tx.type === 'income'"
+                          [class.dark:text-emerald-400]="tx.type === 'income'"
+                        >
+                          {{ tx.type === 'expense' ? '-' : '+' }}{{ tx.amount | currencyFormat: 'VES' }}
+                        </span>
+                        <span class="text-[10px] font-mono text-slate-500 dark:text-slate-400 block">
+                          ≈ $ {{ (tx.amountUsd || bcvService.vesToUsd(tx.amount, tx.exchangeRate)) | number: '1.2-2' }}
+                        </span>
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="py-6 text-center rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700/70">
+                      <mat-icon class="text-2xl text-emerald-500 mb-1">receipt_long</mat-icon>
+                      <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Sin movimientos registrados</p>
+                      <p class="text-[11px] text-slate-400 mb-2.5">Registra tu primer movimiento de ingreso o gasto.</p>
+                      <button
+                        (click)="openNewTransaction()"
+                        class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <mat-icon class="text-xs">add</mat-icon>
+                        <span>Nuevo Movimiento</span>
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span class="text-xs text-slate-400">Total ingresos este mes</span>
+                <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                  +{{ financeService.totalIncome() | currencyFormat: 'VES' }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -502,6 +710,22 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
             </div>
           </div>
 
+          <!-- Info Banner for BCV Reference Rate in Transactions -->
+          <div class="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-emerald-600 text-sm">currency_exchange</mat-icon>
+              <span class="text-slate-700 dark:text-slate-300">
+                Movimientos en <strong>Bolívares (VES)</strong> con conversión a <strong>Dólares (USD)</strong> según la tasa BCV del día.
+              </span>
+            </div>
+            <div class="font-mono font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+              <span class="text-[11px] text-slate-500 dark:text-slate-400">Tasa BCV de hoy:</span>
+              <span class="px-2 py-0.5 bg-white dark:bg-slate-800 rounded-lg border border-emerald-200 dark:border-emerald-800 text-xs shadow-2xs">
+                Bs. {{ bcvService.dollarRate() | number:'1.2-2' }} / USD
+              </span>
+            </div>
+          </div>
+
           <!-- Table -->
           <div class="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800">
             <table class="w-full text-left border-collapse" aria-label="Tabla de transacciones financieras">
@@ -512,7 +736,7 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
                   <th scope="col" class="py-3 px-3 hidden sm:table-cell">Cuenta</th>
                   <th scope="col" class="py-3 px-3 hidden md:table-cell">Fecha</th>
                   <th scope="col" class="py-3 px-3">Estado</th>
-                  <th scope="col" class="py-3 px-4 text-right">Monto</th>
+                  <th scope="col" class="py-3 px-4 text-right">Monto (VES) / USD</th>
                   <th scope="col" class="py-3 px-3 text-center">Acciones</th>
                 </tr>
               </thead>
@@ -557,15 +781,26 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
                       </span>
                     </td>
                     <td class="py-3 px-4 text-right">
-                      <span
-                        class="font-mono font-bold text-xs sm:text-sm"
-                        [class.text-rose-600]="tx.type === 'expense'"
-                        [class.dark:text-rose-400]="tx.type === 'expense'"
-                        [class.text-emerald-600]="tx.type === 'income'"
-                        [class.dark:text-emerald-400]="tx.type === 'income'"
-                      >
-                        {{ tx.type === 'expense' ? '-' : '+' }}{{ tx.amount | currencyFormat: 'EUR' }}
-                      </span>
+                      <div class="flex flex-col items-end">
+                        <span
+                          class="font-mono font-bold text-xs sm:text-sm"
+                          [class.text-rose-600]="tx.type === 'expense'"
+                          [class.dark:text-rose-400]="tx.type === 'expense'"
+                          [class.text-emerald-600]="tx.type === 'income'"
+                          [class.dark:text-emerald-400]="tx.type === 'income'"
+                        >
+                          {{ tx.type === 'expense' ? '-' : '+' }}{{ tx.amount | currencyFormat: 'VES' }}
+                        </span>
+                        <div class="flex items-center gap-1.5 mt-0.5 font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                          <span>≈ $ {{ (tx.amountUsd || bcvService.vesToUsd(tx.amount, tx.exchangeRate)) | number: '1.2-2' }}</span>
+                          <span
+                            class="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-[9px] font-semibold text-slate-600 dark:text-slate-300"
+                            title="Tasa de cambio BCV aplicada a esta operación"
+                          >
+                            @ {{ (tx.exchangeRate || bcvService.dollarRate()) | number: '1.2-2' }}
+                          </span>
+                        </div>
+                      </div>
                     </td>
                     <td class="py-3 px-3 text-center">
                       <div class="flex items-center justify-center gap-1">
@@ -631,9 +866,9 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
                 <div>
                   <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Presupuesto Mensual Global</span>
                   <p class="text-lg font-extrabold text-slate-900 dark:text-white font-mono">
-                    {{ financeService.totalExpense() | currencyFormat: 'EUR' }}
+                    {{ financeService.totalExpense() | currencyFormat: 'VES' }}
                     <span class="text-xs font-normal text-slate-400">
-                      de {{ budgetService.totalBudgetLimit() | currencyFormat: 'EUR' }}
+                      de {{ budgetService.totalBudgetLimit() | currencyFormat: 'VES' }}
                     </span>
                   </p>
                 </div>
@@ -686,14 +921,14 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
 
                   <div>
                     <label for="dash-b-limit" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                      Límite Mensual (€)
+                      Límite Mensual (Bs. VES)
                     </label>
                     <input
                       id="dash-b-limit"
                       type="number"
-                      step="10"
+                      step="50"
                       formControlName="monthlyLimit"
-                      placeholder="350"
+                      placeholder="15000"
                       class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500"
                     />
                   </div>
@@ -765,8 +1000,13 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
                   </div>
 
                   <div class="flex items-baseline justify-between text-xs font-mono">
-                    <span class="text-slate-500">Gastado: {{ spent | currencyFormat: 'EUR' }}</span>
-                    <span class="text-slate-800 dark:text-slate-200 font-bold">Límite: {{ budget.monthlyLimit | currencyFormat: 'EUR' }}</span>
+                    <span class="text-slate-500">Gastado: {{ spent | currencyFormat: 'VES' }}</span>
+                    <span class="text-slate-800 dark:text-slate-200 font-bold">
+                      Límite: {{ budget.monthlyLimit | currencyFormat: 'VES' }}
+                      <span class="text-[10px] text-slate-400 font-normal">
+                        (≈ $ {{ (budget.monthlyLimit / (bcvService.dollarRate() || 52.45)) | number:'1.2-2' }})
+                      </span>
+                    </span>
                   </div>
 
                   <div class="w-full h-2 bg-slate-100 dark:bg-slate-700/80 rounded-full overflow-hidden">
@@ -804,22 +1044,22 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
               </p>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <button
                 (click)="triggerSyncAll()"
                 [disabled]="bankSyncService.isSyncingAll()"
-                class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/30 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                class="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
               >
                 <mat-icon [class.animate-spin]="bankSyncService.isSyncingAll()" class="text-sm">sync</mat-icon>
                 <span>{{ bankSyncService.isSyncingAll() ? 'Sincronizando...' : 'Sincronizar Todas' }}</span>
               </button>
 
               <button
-                (click)="showBankModal.set(true)"
-                class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer"
+                (click)="openAddBankModal()"
+                class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
               >
-                <mat-icon class="text-sm">add_link</mat-icon>
-                <span>Vincular Banco</span>
+                <mat-icon class="text-sm">add_circle</mat-icon>
+                <span>+ Nueva Cuenta</span>
               </button>
             </div>
           </div>
@@ -828,9 +1068,14 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
           <div class="p-4 rounded-2xl bg-gradient-to-r from-blue-900/10 via-emerald-900/10 to-teal-900/10 dark:from-blue-950/40 dark:to-teal-950/40 border border-blue-200/60 dark:border-blue-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <p class="text-xs text-slate-500 dark:text-slate-400">Saldo Consolidado en Bancos</p>
-              <p class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono">
-                {{ bankSyncService.totalBankBalance() | currencyFormat: 'EUR' }}
-              </p>
+              <div class="flex items-baseline gap-2">
+                <p class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono">
+                  {{ bankSyncService.totalBankBalance() | currencyFormat: 'VES' }}
+                </p>
+                <span class="text-xs font-mono font-bold text-slate-400">
+                  (≈ $ {{ bcvService.vesToUsd(bankSyncService.totalBankBalance()) | number:'1.2-2' }})
+                </span>
+              </div>
             </div>
             <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
               <mat-icon class="text-emerald-500 text-base">verified</mat-icon>
@@ -852,7 +1097,22 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
                     </mat-icon>
                   </div>
                   <div class="truncate">
-                    <p class="text-sm font-bold text-slate-900 dark:text-white truncate">{{ acc.name }}</p>
+                    <div class="flex items-center gap-1.5">
+                      <p class="text-sm font-bold text-slate-900 dark:text-white truncate">{{ acc.name }}</p>
+                      <span
+                        class="text-[9px] font-bold px-1.5 py-0.2 rounded"
+                        [class.bg-emerald-100]="acc.currency === 'USD'"
+                        [class.text-emerald-700]="acc.currency === 'USD'"
+                        [class.dark:bg-emerald-950]="acc.currency === 'USD'"
+                        [class.dark:text-emerald-300]="acc.currency === 'USD'"
+                        [class.bg-blue-100]="acc.currency !== 'USD'"
+                        [class.text-blue-700]="acc.currency !== 'USD'"
+                        [class.dark:bg-blue-950]="acc.currency !== 'USD'"
+                        [class.dark:text-blue-300]="acc.currency !== 'USD'"
+                      >
+                        {{ acc.currency || 'VES' }}
+                      </span>
+                    </div>
                     <p class="text-xs text-slate-400 font-mono">{{ acc.bankName }} • {{ acc.accountNumber }}</p>
                     <span class="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium mt-0.5">
                       <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -862,17 +1122,55 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
                 </div>
 
                 <div class="text-right shrink-0">
-                  <p class="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                    {{ acc.balance | currencyFormat: 'EUR' }}
-                  </p>
-                  <button
-                    (click)="bankSyncService.removeAccount(acc.id)"
-                    class="p-1 text-slate-300 hover:text-rose-500 rounded-lg cursor-pointer"
-                    title="Desvincular"
-                  >
-                    <mat-icon class="text-sm">delete_outline</mat-icon>
-                  </button>
+                  @if (acc.currency === 'USD') {
+                    <p class="text-base font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+                      $ {{ acc.balance | number:'1.2-2' }}
+                    </p>
+                    <p class="text-[11px] font-mono text-slate-400">
+                      ≈ Bs. {{ bcvService.usdToVes(acc.balance) | number:'1.2-2' }}
+                    </p>
+                  } @else {
+                    <p class="text-base font-extrabold text-slate-900 dark:text-white font-mono">
+                      {{ acc.balance | currencyFormat: 'VES' }}
+                    </p>
+                    <p class="text-[11px] font-mono text-slate-400">
+                      ≈ $ {{ bcvService.vesToUsd(acc.balance) | number:'1.2-2' }}
+                    </p>
+                  }
+                  <div class="flex items-center justify-end gap-1 mt-1">
+                    <button
+                      (click)="bankSyncService.syncAccount(acc.id)"
+                      class="p-1 text-slate-400 hover:text-blue-500 rounded-lg cursor-pointer transition-colors"
+                      title="Sincronizar cuenta"
+                    >
+                      <mat-icon class="text-sm">sync</mat-icon>
+                    </button>
+                    <button
+                      (click)="bankSyncService.removeAccount(acc.id)"
+                      class="p-1 text-slate-400 hover:text-rose-500 rounded-lg cursor-pointer transition-colors"
+                      title="Desvincular"
+                    >
+                      <mat-icon class="text-sm">delete_outline</mat-icon>
+                    </button>
+                  </div>
                 </div>
+              </div>
+            } @empty {
+              <div class="col-span-1 md:col-span-2 p-8 text-center rounded-3xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700/70">
+                <div class="w-12 h-12 mx-auto rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3">
+                  <mat-icon class="text-2xl">account_balance_wallet</mat-icon>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Aún no tienes cuentas registradas</h3>
+                <p class="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
+                  Agrega cuentas bancarias nacionales en Bolívares (VES), billeteras digitales en Dólares (USD) o efectivo con su saldo inicial.
+                </p>
+                <button
+                  (click)="openAddBankModal()"
+                  class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-md shadow-emerald-600/25 inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <mat-icon class="text-sm">add_circle</mat-icon>
+                  <span>+ Registrar Primera Cuenta</span>
+                </button>
               </div>
             }
           </div>
@@ -890,7 +1188,7 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
               Exportación de Reportes Financieros
             </h2>
             <p class="text-xs text-slate-400">
-              Genera documentos ejecutivos en PDF o exporta hojas de datos tabulares CSV para Excel y Google Sheets.
+              Genera documentos ejecutivos en PDF con tasa Dólar BCV o exporta hojas de datos tabulares CSV para Excel y Google Sheets.
             </p>
           </div>
 
@@ -900,15 +1198,15 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
               <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Ingresos</span>
-                <span class="text-sm font-bold text-emerald-600 font-mono">+{{ financeService.totalIncome() | currencyFormat: 'EUR' }}</span>
+                <span class="text-sm font-bold text-emerald-600 font-mono">+{{ financeService.totalIncome() | currencyFormat: 'VES' }}</span>
               </div>
               <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Gastos</span>
-                <span class="text-sm font-bold text-rose-600 font-mono">-{{ financeService.totalExpense() | currencyFormat: 'EUR' }}</span>
+                <span class="text-sm font-bold text-rose-600 font-mono">-{{ financeService.totalExpense() | currencyFormat: 'VES' }}</span>
               </div>
               <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Balance Neto</span>
-                <span class="text-sm font-bold text-blue-600 font-mono">{{ financeService.netBalance() | currencyFormat: 'EUR': true }}</span>
+                <span class="text-sm font-bold text-blue-600 font-mono">{{ financeService.netBalance() | currencyFormat: 'VES': true }}</span>
               </div>
               <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Tasa Ahorro</span>
@@ -986,7 +1284,10 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
     }
 
     @if (showBankModal()) {
-      <app-bank-sync-modal (closeModal)="showBankModal.set(false)" />
+      <app-bank-sync-modal
+        [initialMode]="bankModalMode()"
+        (closeModal)="showBankModal.set(false)"
+      />
     }
 
     @if (showBudgetModal()) {
@@ -995,6 +1296,10 @@ export type DashboardTab = 'overview' | 'transacciones' | 'presupuestos' | 'banc
 
     @if (showExportModal()) {
       <app-export-modal (closeModal)="showExportModal.set(false)" />
+    }
+
+    @if (showProfileModal()) {
+      <app-user-profile-modal (closeModal)="showProfileModal.set(false)" />
     }
   `,
 })
@@ -1007,21 +1312,49 @@ export class Dashboard implements OnInit, OnDestroy {
   readonly budgetService = inject(BudgetService);
   readonly authService = inject(AuthService);
   readonly notificationService = inject(NotificationService);
+  readonly bcvService = inject(BcvService);
 
   readonly Math = Math;
 
   // Active section tab
   readonly activeTab = signal<DashboardTab>('overview');
 
+  readonly currentTabTitle = computed(() => {
+    switch (this.activeTab()) {
+      case 'transacciones':
+        return 'Transacciones';
+      case 'presupuestos':
+        return 'Presupuestos';
+      case 'bancos':
+        return 'Cuentas Bancarias';
+      case 'reportes':
+        return 'Reportes PDF / CSV';
+      default:
+        return 'Panel Principal';
+    }
+  });
+
   // Modals state
   readonly showTransactionModal = signal<boolean>(false);
   readonly showBankModal = signal<boolean>(false);
+  readonly bankModalMode = signal<'list' | 'create'>('list');
   readonly showBudgetModal = signal<boolean>(false);
   readonly showExportModal = signal<boolean>(false);
+  readonly showProfileModal = signal<boolean>(false);
 
   readonly showCreateBudgetForm = signal<boolean>(false);
   readonly isGeneratingPdf = signal<boolean>(false);
   readonly editingTransaction = signal<Transaction | null>(null);
+
+  openAddBankModal(): void {
+    this.bankModalMode.set('create');
+    this.showBankModal.set(true);
+  }
+
+  openBankListModal(): void {
+    this.bankModalMode.set('list');
+    this.showBankModal.set(true);
+  }
 
   private routeSub?: Subscription;
 
@@ -1129,8 +1462,8 @@ export class Dashboard implements OnInit, OnDestroy {
       if (targetAcc) {
         this.financeService.importBankMovement(
           targetAcc.id,
-          'Reembolso Transferencia Bizum Recibido',
-          35.00,
+          'Pago Móvil / Transferencia Interbancaria Recibida',
+          1835.75,
           'income',
           'cat_other_income'
         );
@@ -1145,7 +1478,7 @@ export class Dashboard implements OnInit, OnDestroy {
       PdfGenerator.generateReport({
         userName: user?.name || 'Usuario Fintrack',
         userEmail: user?.email || 'usuario@fintrack.io',
-        currency: 'EUR',
+        currency: 'VES',
         dateRange: 'Mes Actual (Octubre 2026)',
         transactions: this.financeService.transactions(),
         budgets: this.budgetService.budgets(),

@@ -9,8 +9,13 @@ import {join} from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
+import bcvRouter from './server/bcv';
+
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+app.use(express.json());
+app.use(bcvRouter);
 
 /**
  * Example Express Rest API endpoints can be defined here.

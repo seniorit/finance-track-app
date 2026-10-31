@@ -1,14 +1,16 @@
 import { Component, inject, output, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { BudgetService } from '../../../services/budget.service';
 import { FinanceService } from '../../../services/finance.service';
+import { BcvService } from '../../../services/bcv.service';
 import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
 import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
 
 @Component({
   selector: 'app-budget-manager-modal',
-  imports: [ReactiveFormsModule, MatIconModule, CurrencyFormatPipe, DateFormatPipe],
+  imports: [ReactiveFormsModule, MatIconModule, DecimalPipe, CurrencyFormatPipe, DateFormatPipe],
   template: `
     <div
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
@@ -58,9 +60,9 @@ import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
               <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Presupuesto Mensual Global</span>
                 <p class="text-lg font-extrabold text-slate-900 dark:text-white font-mono">
-                  {{ financeService.totalExpense() | currencyFormat: 'EUR' }}
+                  {{ financeService.totalExpense() | currencyFormat: 'VES' }}
                   <span class="text-xs font-normal text-slate-400">
-                    de {{ budgetService.totalBudgetLimit() | currencyFormat: 'EUR' }}
+                    de {{ budgetService.totalBudgetLimit() | currencyFormat: 'VES' }}
                   </span>
                 </p>
               </div>
@@ -94,7 +96,7 @@ import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
           <div>
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Presupuestos por Categoría
+                Presupuestos por Categoría (Tasa Dólar BCV: Bs. {{ bcvService.dollarRate() | number:'1.2-2' }})
               </h3>
               <button
                 (click)="showCreateForm.set(!showCreateForm())"
@@ -125,10 +127,15 @@ import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
                     </div>
 
                     <div class="flex items-center gap-3">
-                      <span class="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
-                        {{ spent | currencyFormat: 'EUR' }}
-                        <span class="text-slate-400 font-normal">/ {{ budget.monthlyLimit | currencyFormat: 'EUR' }}</span>
-                      </span>
+                      <div class="text-right">
+                        <p class="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+                          {{ spent | currencyFormat: 'VES' }}
+                          <span class="text-slate-400 font-normal">/ {{ budget.monthlyLimit | currencyFormat: 'VES' }}</span>
+                        </p>
+                        <p class="text-[10px] font-mono text-slate-400">
+                          ≈ $ {{ (budget.monthlyLimit / (bcvService.dollarRate() || 52.45)) | number:'1.2-2' }} USD
+                        </p>
+                      </div>
 
                       <!-- Status tag -->
                       @if (pct >= 100) {
@@ -196,14 +203,14 @@ import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
 
                 <div>
                   <label for="b-limit" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                    Límite Mensual (€)
+                    Límite Mensual (Bs. VES)
                   </label>
                   <input
                     id="b-limit"
                     type="number"
-                    step="10"
+                    step="50"
                     formControlName="monthlyLimit"
-                    placeholder="300"
+                    placeholder="15000"
                     class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -276,7 +283,7 @@ import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
                         {{ alert.categoryName }}: {{ alert.thresholdTriggered }}% superado
                       </p>
                       <p class="text-[11px] text-slate-600 dark:text-slate-300">
-                        Gastado {{ alert.spent | currencyFormat: 'EUR' }} de {{ alert.limit | currencyFormat: 'EUR' }} ({{ alert.percentage }}%)
+                        Gastado {{ alert.spent | currencyFormat: 'VES' }} de {{ alert.limit | currencyFormat: 'VES' }} ({{ alert.percentage }}%)
                       </p>
                     </div>
                   </div>
@@ -313,6 +320,7 @@ import { DateFormatPipe } from '../../../core/pipes/date-format.pipe';
 export class BudgetManagerModal {
   readonly budgetService = inject(BudgetService);
   readonly financeService = inject(FinanceService);
+  readonly bcvService = inject(BcvService);
 
   readonly closeModal = output<void>();
   readonly showCreateForm = signal<boolean>(false);
@@ -329,7 +337,7 @@ export class BudgetManagerModal {
 
   readonly budgetForm = new FormGroup({
     categoryId: new FormControl<string>('cat_food', { nonNullable: true }),
-    monthlyLimit: new FormControl<number>(350, [Validators.required, Validators.min(10)]),
+    monthlyLimit: new FormControl<number>(15000, [Validators.required, Validators.min(100)]),
   });
 
   onSaveBudget(): void {

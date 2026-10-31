@@ -18,9 +18,9 @@ export interface MonthlyCashFlowItem {
           class="absolute top-2 right-2 sm:right-4 z-10 px-3 py-1.5 rounded-xl bg-slate-900/90 text-white text-xs shadow-lg backdrop-blur-sm pointer-events-none transition-all flex items-center gap-3 border border-slate-700/60"
         >
           <span class="font-bold text-slate-300">{{ item.month }}:</span>
-          <span class="text-emerald-400 font-medium">Ing: +{{ item.income | currencyFormat: 'EUR' }}</span>
-          <span class="text-rose-400 font-medium">Gas: -{{ item.expense | currencyFormat: 'EUR' }}</span>
-          <span class="font-bold text-blue-400">Neto: {{ (item.income - item.expense) | currencyFormat: 'EUR': true }}</span>
+          <span class="text-emerald-400 font-medium">Ing: +{{ item.income | currencyFormat: 'VES' }}</span>
+          <span class="text-rose-400 font-medium">Gas: -{{ item.expense | currencyFormat: 'VES' }}</span>
+          <span class="font-bold text-blue-400">Neto: {{ (item.income - item.expense) | currencyFormat: 'VES': true }}</span>
         </div>
       }
 
@@ -62,7 +62,7 @@ export interface MonthlyCashFlowItem {
             text-anchor="end"
             class="fill-slate-400 text-[10px] font-mono"
           >
-            {{ line.label }}€
+            Bs. {{ line.label }}
           </text>
         }
 

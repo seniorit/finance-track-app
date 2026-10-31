@@ -5,17 +5,28 @@ import { Sidebar } from '../sidebar/sidebar';
 import { Navbar } from '../navbar/navbar';
 import { Footer } from '../footer/footer';
 import { TransactionModal } from '../../views/feature-components/transaction-modal';
+import { UserProfileModal } from '../../views/feature-components/user-profile-modal';
 import { FinanceService } from '../../../services/finance.service';
 import { BankSyncService } from '../../../services/bank-sync.service';
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Sidebar, Navbar, Footer, TransactionModal, MatIconModule],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    Sidebar,
+    Navbar,
+    Footer,
+    TransactionModal,
+    UserProfileModal,
+    MatIconModule,
+  ],
   template: `
     <div class="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
       <!-- Desktop Sidebar -->
       <div class="hidden md:block shrink-0 sticky top-0 h-screen">
-        <app-sidebar />
+        <app-sidebar (openProfileModal)="showProfileModal.set(true)" />
       </div>
 
       <!-- Mobile Slide-over Drawer Backdrop & Sidebar -->
@@ -37,7 +48,10 @@ import { BankSyncService } from '../../../services/bank-sync.service';
             (click)="$event.stopPropagation()"
             (keydown)="$event.stopPropagation()"
           >
-            <app-sidebar (closeSidebar)="mobileMenuOpen.set(false)" />
+            <app-sidebar
+              (closeSidebar)="mobileMenuOpen.set(false)"
+              (openProfileModal)="showProfileModal.set(true); mobileMenuOpen.set(false)"
+            />
           </div>
         </div>
       }
@@ -48,6 +62,7 @@ import { BankSyncService } from '../../../services/bank-sync.service';
         <app-navbar
           (openMobileMenu)="mobileMenuOpen.set(true)"
           (openAddTx)="showAddModal.set(true)"
+          (openProfileModal)="showProfileModal.set(true)"
         />
 
         <!-- Page View Outlet -->
@@ -112,6 +127,11 @@ import { BankSyncService } from '../../../services/bank-sync.service';
       @if (showAddModal()) {
         <app-transaction-modal (closeModal)="showAddModal.set(false)" />
       }
+
+      <!-- User Profile Modal triggered from Layout -->
+      @if (showProfileModal()) {
+        <app-user-profile-modal (closeModal)="showProfileModal.set(false)" />
+      }
     </div>
   `,
 })
@@ -121,4 +141,5 @@ export class Layout {
 
   readonly mobileMenuOpen = signal<boolean>(false);
   readonly showAddModal = signal<boolean>(false);
+  readonly showProfileModal = signal<boolean>(false);
 }

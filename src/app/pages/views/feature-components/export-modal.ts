@@ -67,19 +67,19 @@ import { CurrencyFormatPipe } from '../../../core/pipes/currency-format.pipe';
               <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Ingresos</span>
                 <span class="text-sm font-bold text-emerald-600 font-mono">
-                  +{{ financeService.totalIncome() | currencyFormat: 'EUR' }}
+                  +{{ financeService.totalIncome() | currencyFormat: 'VES' }}
                 </span>
               </div>
               <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Gastos</span>
                 <span class="text-sm font-bold text-rose-600 font-mono">
-                  -{{ financeService.totalExpense() | currencyFormat: 'EUR' }}
+                  -{{ financeService.totalExpense() | currencyFormat: 'VES' }}
                 </span>
               </div>
               <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Neto</span>
                 <span class="text-sm font-bold text-blue-600 font-mono">
-                  {{ financeService.netBalance() | currencyFormat: 'EUR': true }}
+                  {{ financeService.netBalance() | currencyFormat: 'VES': true }}
                 </span>
               </div>
             </div>
@@ -170,7 +170,7 @@ export class ExportModal {
       PdfGenerator.generateReport({
         userName: user?.name || 'Usuario Fintrack',
         userEmail: user?.email || 'usuario@fintrack.io',
-        currency: 'EUR',
+        currency: 'VES',
         dateRange: 'Mes Actual (Octubre 2026)',
         transactions: this.financeService.transactions(),
         budgets: this.budgetService.budgets(),
